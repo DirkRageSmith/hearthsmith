@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hearthsmith — tests</title>
+<style>
+  :root{--bg:#151013;--ink:#f3e9e2;--dim:#a8968f;--pass:#8fbf7f;--fail:#e06a6a;--line:#3a2c2f}
+  body{background:var(--bg);color:var(--ink);font:15px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;
+       margin:0;padding:22px;max-width:760px}
+  h1{font-size:1.1rem;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:.82rem;margin-bottom:18px}
+  #summary{font-size:1.05rem;padding:11px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:16px}
+  ul{list-style:none;margin:0;padding:0}
+  li{padding:6px 0;border-bottom:1px solid var(--line)}
+  .ok{color:var(--pass)} .no{color:var(--fail)}
+  .msg{color:var(--fail);font-size:.82rem;padding-left:52px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>Hearthsmith — ledger tests</h1>
+<div class="sub">Same suite node runs. Serve this folder over http, or the JSON fetches are blocked.</div>
+<div id="summary">running…</div>
+<ul id="out"></ul>
+
+<script src="ledger.js"></script>
+<script src="tests.js"></script>
+<script>
+Promise.all([
+  fetch("catalog.json").then(r => r.json()),
+  fetch("currencies.json").then(r => r.json())
+]).then(([catalog, currencies]) => {
+  const out = window.HearthsmithTests.run(window.Ledger, catalog, currencies);
+  document.getElementById("summary").innerHTML =
+    `<b class="${out.failed ? "no" : "ok"}">${out.passed} passed, ${out.failed} failed</b>`;
+  const ul = document.getElementById("out");
+  out.results.forEach(r => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="${r.ok ? "ok" : "no"}">${r.ok ? "PASS" : "FAIL"}</span>&nbsp; ${r.name}` +
+                   (r.ok ? "" : `<div class="msg">${r.msg}</div>`);
+    ul.appendChild(li);
+  });
+}).catch(() => {
+  document.getElementById("summary").innerHTML =
+    '<b class="no">Could not load catalog.json / currencies.json.</b><br>' +
+    'Run <code>python -m http.server 8080</code> in this folder and open ' +
+    '<code>http://localhost:8080/tests.html</code>.';
+});
+</script>
+</body>
+</html>

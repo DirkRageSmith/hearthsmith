@@ -1,0 +1,120 @@
+{
+  "$comment": [
+    "THE CURRENCY REGISTRY. The only place a currency may be defined.",
+    "Every key used in an event's `grants` or `cost` map must appear here, or the event",
+    "is invalid — an unknown key is a hard validation error, never a silent pass. That",
+    "check is the entire defence against currency soup arriving by accident.",
+    "",
+    "THE DISCIPLINE RULE: a currency exists only if there is something you can ONLY buy",
+    "with it. `only_buys` may never be empty. Before adding one, ask honestly: 'if I",
+    "deleted this and let core:embers buy the same things, what would be lost?' If the",
+    "answer is nothing, it was flavour text with a number attached.",
+    "",
+    "THE ONE-WAY VALVE: local currency may NEVER convert to core currency, in any",
+    "direction. A tool grants core currency ALONGSIDE its local currency, never in",
+    "exchange for it. This is what makes one-currency-per-minigame safe: a local economy",
+    "that is broken, overgenerous or abandoned cannot inflate the world.",
+    "",
+    "See ragesmith/ECONOMY.md sections 0 and 2.5. Frozen as slice 0.1 on 2026-08-25."
+  ],
+  "version": 1,
+  "classes": {
+    "core": "Crosses every tool. Exactly three, forever. A fourth requires a new ADR.",
+    "skill": "Universal meaning, domain-limited spending. Grows by sub-skill via dot notation.",
+    "local": "Owned by one tool, spendable only inside it, never convertible to core."
+  },
+  "currencies": [
+    {
+      "id": "core:xp",
+      "name": "XP",
+      "class": "core",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing — it is a permanent record, not a resource",
+      "notes": "Only ever goes up. Never spent, never lost. For the target audience a number that can fall on its own is a number that can be used against you."
+    },
+    {
+      "id": "core:embers",
+      "name": "Embers",
+      "class": "core",
+      "owner": "core",
+      "spendable": true,
+      "only_buys": "everything you build — home and town upgrades, furniture, plots, decoration, residents' houses",
+      "notes": "The city-builder economy. Falls ONLY when the player deliberately buys something; the test is 'did the player choose it?'. Never purchasable with real money."
+    },
+    {
+      "id": "core:favor",
+      "name": "Favor",
+      "class": "core",
+      "owner": "core",
+      "spendable": true,
+      "only_buys": "civic and town-scale things that no amount of self-care can unlock",
+      "trust_floor": "T4",
+      "notes": "Minted EXCLUSIVELY by T4 witnessed community favours, where a second human confirmed something real happened. Self-care never mints Favor. The only currency that could ever convert to real money, and only at Tier 5. Never exchanges with Embers in either direction."
+    },
+
+    {
+      "id": "skill:home",
+      "name": "Home",
+      "class": "skill",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "unlocks the Home catalogue — cleaning, repair, plant and tidying objects become purchasable",
+      "notes": "Permission, not payment. Skill points gate WHAT appears in the shop; Embers pay for it."
+    },
+    {
+      "id": "skill:body",
+      "name": "Body",
+      "class": "skill",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "unlocks the Body catalogue — the good bed, the window with morning light, a bathroom worth being in"
+    },
+    {
+      "id": "skill:kitchen",
+      "name": "Kitchen",
+      "class": "skill",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "unlocks the Kitchen catalogue — stove, pantry, table, everything you cook with"
+    },
+    {
+      "id": "skill:craft",
+      "name": "Craft",
+      "class": "skill",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "unlocks the Craft catalogue — workshop, instruments, desk, the making-things room"
+    },
+    {
+      "id": "skill:community",
+      "name": "Community",
+      "class": "skill",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "unlocks the Community catalogue — the town square, shared structures, and eventually the guild board itself"
+    },
+
+    {
+      "id": "fitflexr:reps",
+      "name": "Reps",
+      "class": "local",
+      "owner": "fitflexr",
+      "spendable": true,
+      "status": "reserved",
+      "only_buys": "FitFlexr's own unlocks — exercise packs, programme templates, its in-app cosmetics",
+      "notes": "WORKED EXAMPLE, not yet live. Reserved here to prove the framework: a FitFlexr workout grants core:xp + core:embers + skill:body + fitflexr:reps in ONE event. The Embers are the world's, the Reps are FitFlexr's, and no exchange rate exists between them. Activate when FitFlexr starts writing to the ledger at Tier 2."
+    },
+    {
+      "id": "guild:cleanup_tokens",
+      "name": "Cleanup Tokens",
+      "class": "local",
+      "owner": "guild",
+      "spendable": true,
+      "status": "reserved",
+      "trust_floor": "T4",
+      "only_buys": "gear and standing tied to organised real-world events — the things only someone who actually turned up should have",
+      "notes": "SECOND WORKED EXAMPLE, Tier 4, not yet live. Reserved to prove that organised real-world events (a beach cleanup) need NO new machinery: every attendee writes an ordinary event carrying subject='event:beach-cleanup-YYYY-MM-DD', the organiser writes one with kind='host', and the cleanup IS the set of events pointing at that subject. Note it grants core:favor as well, because attendance is T4-witnessed by the organiser — but the tokens themselves are local and, per the one-way valve, can never reach Favor or Embers."
+    }
+  ]
+}

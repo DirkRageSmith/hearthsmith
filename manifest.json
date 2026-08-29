@@ -1,0 +1,19 @@
+{
+  "name": "Hearthsmith",
+  "short_name": "Hearthsmith",
+  "description": "Take care of yourself. Earn Embers. Build the town.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#151013",
+  "theme_color": "#151013",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

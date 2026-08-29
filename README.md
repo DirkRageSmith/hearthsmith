@@ -14,14 +14,22 @@ a few weeks is the same thing that — if it keeps going — becomes the world.
 
 ## Status
 
-**Tier 0 — The Ledger. BUILT AND GREEN as of 2026-08-25. Next: slice 0.6, ship it.**
+**Tier 0 — The Ledger. LIVE as of 2026-08-29 at
+<https://dirkragesmith.github.io/hearthsmith/>.**
 
 Slices 0.1–0.5 and 0.7 are done. The app runs, the doctor is HEALTHY, and 22 tests pass.
 
-**The only thing left in Tier 0 is handing it to a human**, which is precisely the step this
-machine has never completed on any project: FitFlexr sat finished and deployed for eleven
-days without a tester, and lesson-looper's Pages has 404'd since 2026-08-10. The brief is in
-[../NEXT.md](../NEXT.md).
+**Slice 0.6 is published but not yet closed.** The URL was *fetched* and returned 200 —
+not assumed — along with every asset (`ledger.js`, `catalog.json`, `currencies.json`,
+`manifest.json`, `sw.js`, `icon.svg`). In a mobile-sized browser the full loop works: an
+action logs, the event matches the frozen schema exactly, the balance computes, the service
+worker registers, and the ledger survives a reload.
+
+**What is still unverified is the only part that matters: a real phone.** FitFlexr's touch
+handling was completely dead on phones for two weeks while working perfectly with a mouse,
+so an emulated viewport is evidence, not proof. Until Matt has installed it to his home
+screen, logged one action, force-closed the app and reopened it to find that action still
+there, **0.6 stays open and [../NEXT.md](../NEXT.md) stays pointed at it.**
 
 ---
 
@@ -200,3 +208,39 @@ reads, and an undocumented park becomes an abandonment.*
 > died twice).
 >
 > **Next: slice 0.6 — ship it.** Everything is built. Nobody has it. See `../NEXT.md`.
+>
+> **2026-08-29 (slice 0.6 — PUBLISHED, not yet closed)** — Four days passed between "the
+> app is built and green" and anybody being able to open it, which is the failure this
+> slice exists to break, arriving on schedule. Repo `DirkRageSmith/hearthsmith` created
+> **public** via the GitHub MCP (`autoInit:false`), the contents of `hearthsmith/` pushed to
+> the **repo root** so `index.html` is top-level, and Pages enabled on `main` / `/ (root)`
+> through the REST API (`POST /repos/:owner/:repo/pages`) rather than left as a manual
+> click — the `GITHUB_PERSONAL_ACCESS_TOKEN` on this machine is sufficient for it, so
+> "Matt has to go and enable Pages" was never true.
+>
+> **Verified rather than assumed**, because that distinction is the entire point of this
+> slice: the URL 404'd for the first ~30 seconds and answered **200 after ~40s**, so the
+> first check would have produced exactly lesson-looper's wrong conclusion. All seven
+> assets return 200. In a 375×812 viewport the loop runs end to end — tapping *Brushed my
+> teeth* wrote one event carrying `v`, a ULID, offset-aware `ts`/`logged_at`, `trust: "T0"`,
+> `source: "hearthsmith@0.2.0"`, `subject`/`place`/`origin` present-and-null, and
+> `grants: {core:xp 10, core:embers 10, skill:body 1}` — the frozen schema, unmodified, in
+> production. Balance computed to 10 Embers, the service worker registered, and the event
+> survived a reload.
+>
+> **Still open, and deliberately not ticked: the phone.** An emulated viewport is not a
+> phone, per this repo's own rule. 0.6 closes when Matt installs it, logs one action,
+> force-closes and reopens to find it still there. `NEXT.md` stays on 0.6 until then —
+> rewriting it to 0.8 now would be the "said live for four days" mistake in a new costume.
+>
+> **Two things noticed while verifying, neither fixed** (scope lock — they are Tier 0
+> polish, not Tier 0):
+> 1. **No `apple-touch-icon` and the only icon is SVG.** Android reads the manifest fine.
+>    iOS Safari historically will not use an SVG for the home-screen icon, so on an iPhone
+>    "Add to Home Screen" may show a screenshot of the page instead of the flame. Cosmetic,
+>    but it is the first impression of whether the thing feels real. A 180×180 PNG plus one
+>    `<link>` fixes it — and would need `CACHE` in `sw.js` bumped.
+> 2. **Hearthsmith and FitFlexr share the `dirkragesmith.github.io` origin**, so they share
+>    one `localStorage`. Both namespace their keys and **neither calls `localStorage.clear()`
+>    today** — checked, not assumed — but the day either one does, it silently wipes the
+>    other's data. Worth knowing before a third PWA lands on the same origin.

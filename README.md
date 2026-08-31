@@ -14,22 +14,19 @@ a few weeks is the same thing that — if it keeps going — becomes the world.
 
 ## Status
 
-**Tier 0 — The Ledger. LIVE as of 2026-08-29 at
-<https://dirkragesmith.github.io/hearthsmith/>.**
+**Tier 0 — The Ledger. LIVE and on a phone. Slice 0.6 CLOSED 2026-08-31.**
+<https://dirkragesmith.github.io/hearthsmith/>
 
-Slices 0.1–0.5 and 0.7 are done. The app runs, the doctor is HEALTHY, and 22 tests pass.
+Slices 0.1–0.7 are done. The app runs, the doctor is HEALTHY, and 22 tests pass.
 
-**Slice 0.6 is published but not yet closed.** The URL was *fetched* and returned 200 —
-not assumed — along with every asset (`ledger.js`, `catalog.json`, `currencies.json`,
-`manifest.json`, `sw.js`, `icon.svg`). In a mobile-sized browser the full loop works: an
-action logs, the event matches the frozen schema exactly, the balance computes, the service
-worker registers, and the ledger survives a reload.
+**Verified on real hardware, which is the only verification that counted here.** Matt
+installed it on his phone, logged *Got out of bed*, closed the app fully, and reopened it
+to find the XP and Embers still there. That mattered because an emulated viewport is not a
+phone: FitFlexr's touch handling was completely dead on phones for two weeks while working
+perfectly with a mouse.
 
-**What is still unverified is the only part that matters: a real phone.** FitFlexr's touch
-handling was completely dead on phones for two weeks while working perfectly with a mouse,
-so an emulated viewport is evidence, not proof. Until Matt has installed it to his home
-screen, logged one action, force-closed the app and reopened it to find that action still
-there, **0.6 stays open and [../NEXT.md](../NEXT.md) stays pointed at it.**
+**Everything left in Tier 0 is distribution and contains no code** — slice 0.8, three
+people, seven days each. See [../NEXT.md](../NEXT.md).
 
 ---
 
@@ -232,6 +229,25 @@ reads, and an undocumented park becomes an abandonment.*
 > phone, per this repo's own rule. 0.6 closes when Matt installs it, logs one action,
 > force-closes and reopens to find it still there. `NEXT.md` stays on 0.6 until then —
 > rewriting it to 0.8 now would be the "said live for four days" mistake in a new costume.
+>
+> **2026-08-31 (slice 0.6 — CLOSED).** Matt installed it on his phone, logged *Got out of
+> bed*, closed the app fully and reopened it; the XP and Embers were still there. **Tier 0
+> is built, shipped and on a phone.** Two days from "green on this machine" to "running on
+> hardware someone owns" — against an eleven-day precedent, which is the number that makes
+> the gates worth having.
+>
+> The slice took two days rather than one because a URL is not a handover, and the doc
+> deliberately refused to tick the box until a human confirmed it. Both intermediate states
+> were written down as they were true — *published, not closed* — rather than rounded up to
+> "live", which is precisely what `lesson-looper`'s entry did for four days and got wrong.
+>
+> **`NEXT.md` is now slice 0.8, and it contains no code.** Three named people, the URL,
+> and one sentence each. It is the step this machine has never once completed on any
+> project, so it gets its own slice rather than being assumed.
+>
+> *Still open and deliberately unfixed:* the iOS `apple-touch-icon` (§ two entries up).
+> It only gets fixed if a tester actually trips on it — pre-empting it is how eleven days
+> happened last time.
 >
 > **Two things noticed while verifying, neither fixed** (scope lock — they are Tier 0
 > polish, not Tier 0):

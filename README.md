@@ -22,18 +22,18 @@ three-outside-testers requirement moved to the *end of Tier 1*, where there is a
 react to rather than a habit tracker. The app runs, the doctor is HEALTHY, and **32 tests**
 pass.
 
-**What is live and what is not, as of 2026-08-31 12:16 — fetched, not assumed:**
+**All of it is live as of 2026-08-31 12:40 — fetched, not assumed:** `/`, `/profile.html`,
+`/character.js` and `/sw.js` all return **200**, and the served service worker is `v0.3.0`.
 
-| | |
-|---|---|
-| `/` | **200** — the day view, shipped 2026-08-31 |
-| `/profile.html` | **404** — the character sheet exists only on disk |
-| `/character.js` | **404** — same |
-| service worker | live `v0.2.0` vs local `v0.3.0` |
+Worth keeping for the next person who publishes here: the two new files **404'd for the
+first 30 seconds and answered 200 at 40.** A single check would have recorded the wrong
+answer, which is precisely what happened to `lesson-looper`'s notes for four days. Poll,
+don't peek.
 
-The character system, the `ragesmith.ledger.v1` migration and the jump to 32 tests were all
-built in one Cowork session and **none of it is committed or pushed.** Until it is, this
-README's claims about it describe a machine, not a product.
+*For a few hours today this section correctly said the opposite — the character system, the
+`ragesmith.ledger.v1` migration and the jump to 32 tests were built in one session and sat
+uncommitted while the live site served `v0.2.0`. Left in the history because "built" and
+"shipped" being different things is the single most expensive lesson in this repo.*
 
 **Verified on real hardware, which is the only verification that counted here.** Matt
 installed it on his phone, logged *Got out of bed*, closed the app fully, and reopened it

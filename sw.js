@@ -7,9 +7,10 @@
  * Bump CACHE when any shell file changes, or a stale shell will be served
  * forever. That is the one maintenance cost of having no build step.
  */
-const CACHE = "hearthsmith-v0.2.0";
+const CACHE = "hearthsmith-v0.3.0";
 const SHELL = [
-  ".", "index.html", "ledger.js",
+  ".", "index.html", "profile.html",
+  "ledger.js", "character.js",
   "catalog.json", "currencies.json",
   "manifest.json", "icon.svg"
 ];

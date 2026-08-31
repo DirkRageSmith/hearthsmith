@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#151013">
+<title>Character — Ragesmith</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg:#151013; --panel:#1e1719; --panel-2:#261d20; --line:#3a2c2f;
+    --ink:#f3e9e2; --dim:#a8968f; --faint:#7b6b67;
+    --ember:#ff9d4d; --glow:#ffce8a; --ember-soft:#5a3620;
+    --body:#8fbf7f; --home:#7fa8d8; --kitchen:#e2a06a; --craft:#b79bd8; --community:#e08fa8;
+    --r:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#faf5f0; --panel:#fff; --panel-2:#f3ebe4; --line:#e4d7cc;
+           --ink:#2a2124; --dim:#6f5f5a; --faint:#948079; --ember-soft:#ffe6cc; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.5 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:max(14px,env(safe-area-inset-top)) 14px calc(32px + env(safe-area-inset-bottom));
+    max-width:640px; margin:0 auto;
+  }
+  a{color:var(--ember);text-decoration:none}
+  .back{font-size:.82rem;color:var(--dim);display:inline-block;margin-bottom:14px}
+
+  /* ---- the crest ---------------------------------------------------------
+     Five arms, one per skill, each reaching further as that tree grows. It is
+     deterministic and it visibly changes as you do — which is the point of
+     having one instead of choosing a portrait from a list. */
+  .crest-wrap{display:flex;gap:16px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px;margin-bottom:14px}
+  .crest{width:104px;height:104px;flex:none;
+    filter:drop-shadow(0 0 12px color-mix(in srgb,var(--ember) 24%,transparent))}
+  .who{min-width:0}
+  .name{font-size:1.3rem;font-weight:650;letter-spacing:.2px;
+        background:none;border:none;color:var(--ink);font-family:inherit;
+        padding:0;width:100%;border-bottom:1px dashed transparent}
+  .name:focus{outline:none;border-bottom-color:var(--line)}
+  .title{color:var(--ember);font-size:.92rem;margin-top:3px}
+  .standing-note{color:var(--faint);font-size:.76rem;margin-top:7px;line-height:1.5}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+        padding:10px 11px;text-align:center}
+  .stat b{display:block;font-size:1.15rem;font-variant-numeric:tabular-nums;line-height:1.2}
+  .stat span{color:var(--dim);font-size:.66rem;text-transform:uppercase;letter-spacing:.05em}
+  .stat.e b{color:var(--ember)}
+
+  h2{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);
+     margin:22px 0 10px;font-weight:600}
+
+  .tree{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+        padding:12px 14px;margin-bottom:8px}
+  .tree.unstarted{opacity:.62}
+  .tree-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .tree-name{font-weight:600;font-size:.95rem}
+  .tree-lv{font-size:.8rem;color:var(--dim);font-variant-numeric:tabular-nums}
+  .bar{height:9px;border-radius:99px;background:var(--panel-2);overflow:hidden;margin-top:9px}
+  .bar i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .tree-note{font-size:.74rem;color:var(--faint);margin-top:7px}
+
+  .row{display:flex;justify-content:space-between;gap:10px;font-size:.87rem;
+       background:var(--panel);border:1px solid var(--line);border-radius:10px;
+       padding:10px 13px;margin-bottom:6px}
+  .row span:last-child{color:var(--dim);font-variant-numeric:tabular-nums;text-align:right}
+  .empty{color:var(--faint);font-size:.85rem;line-height:1.6;padding:10px 2px}
+  footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--faint);font-size:.73rem;line-height:1.7}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html">&larr; Hearthsmith</a>
+
+<div class="crest-wrap">
+  <svg class="crest" id="crest" viewBox="0 0 100 100" aria-label="Your crest"></svg>
+  <div class="who">
+    <input class="name" id="name" placeholder="Name your character" maxlength="28" autocomplete="off" spellcheck="false">
+    <div class="title" id="title">&nbsp;</div>
+    <div class="standing-note" id="standingnote"></div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat e"><b id="s-embers">0</b><span>Embers</span></div>
+  <div class="stat"><b id="s-xp">0</b><span>XP</span></div>
+  <div class="stat"><b id="s-actions">0</b><span>Logged</span></div>
+  <div class="stat"><b id="s-days">0</b><span>Days</span></div>
+</div>
+
+<h2>Skills</h2>
+<div id="trees"></div>
+
+<h2>Where this came from</h2>
+<div id="games"></div>
+
+<h2>Most logged</h2>
+<div id="most"></div>
+
+<footer id="foot"></footer>
+
+<script src="ledger.js"></script>
+<script src="character.js"></script>
+<script>
+(function () {
+  "use strict";
+  var L = window.Ledger, C = window.Character;
+  var $ = function (id) { return document.getElementById(id); };
+  var NAME_KEY = "ragesmith.character.v1";   // studio-wide, like the ledger
+  var COLOR = { body:"var(--body)", home:"var(--home)", kitchen:"var(--kitchen)",
+                craft:"var(--craft)", community:"var(--community)" };
+
+  function loadName() {
+    try { return (JSON.parse(localStorage.getItem(NAME_KEY) || "{}").name) || ""; }
+    catch (e) { return ""; }
+  }
+  function saveName(n) {
+    try { localStorage.setItem(NAME_KEY, JSON.stringify({ name: n })); } catch (e) {}
+  }
+
+  function drawCrest(crest) {
+    var pts = crest.points.map(function (p) { return p.x + "," + p.y; }).join(" ");
+    var svg = '<defs><radialGradient id="g"><stop offset="0%" stop-color="hsl(' + crest.hue +
+              ',85%,68%)" stop-opacity=".55"/><stop offset="100%" stop-color="hsl(' +
+              crest.hue + ',85%,50%)" stop-opacity=".06"/></radialGradient></defs>';
+    svg += '<circle cx="50" cy="50" r="46" fill="url(#g)"/>';
+    svg += '<polygon points="' + pts + '" fill="hsl(' + crest.hue +
+           ',80%,60%)" fill-opacity=".26" stroke="hsl(' + crest.hue +
+           ',85%,66%)" stroke-width="1.6" stroke-linejoin="round"/>';
+    crest.points.forEach(function (p) {
+      /* An unlit node is a tree not yet started. It is drawn hollow rather than
+         missing — nothing here should read as a gap you failed to fill. */
+      svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (p.lit ? 3.4 : 2.2) +
+             '" fill="' + (p.lit ? 'hsl(' + p.hue + ',70%,64%)' : 'none') +
+             '" stroke="hsl(' + p.hue + ',45%,52%)" stroke-width="1.2"/>';
+    });
+    svg += '<circle cx="50" cy="50" r="3" fill="hsl(' + crest.hue + ',90%,72%)"/>';
+    $("crest").innerHTML = svg;
+  }
+
+  function render() {
+    var events = L.read();
+    var catalog = window.__catalog || null;
+    var c = C.build(events, { ledger: L, catalog: catalog, name: loadName() });
+
+    drawCrest(c.crest);
+    $("name").value = c.name || "";
+    $("title").textContent = c.title;
+
+    $("standingnote").textContent = c.standing.next
+      ? c.standing.toNext.toLocaleString() + " XP until " + c.standing.next
+      : "Every standing earned.";
+
+    $("s-embers").textContent  = c.embers.toLocaleString();
+    $("s-xp").textContent      = c.xp.toLocaleString();
+    $("s-actions").textContent = c.actions.toLocaleString();
+    $("s-days").textContent    = c.daysLogged.toLocaleString();
+
+    var trees = $("trees"); trees.innerHTML = "";
+    c.skills.forEach(function (s) {
+      var d = document.createElement("div");
+      d.className = "tree" + (s.started ? "" : " unstarted");
+      d.innerHTML =
+        '<div class="tree-top"><span class="tree-name">' + s.label + '</span>' +
+        '<span class="tree-lv">level ' + s.level + '</span></div>' +
+        '<div class="bar"><i style="width:' + (100 * s.progress).toFixed(1) +
+          '%;background:' + COLOR[s.id] + '"></i></div>' +
+        '<div class="tree-note">' + (s.started
+            ? s.into + ' / ' + s.need + ' to level ' + (s.level + 1)
+            : 'Not started yet.') + '</div>';
+      trees.appendChild(d);
+    });
+
+    /* The shared world, made visible. Every game that has ever written to this
+       ledger shows up here — which is what "one character, all games" looks
+       like when it is working. */
+    var g = $("games"); g.innerHTML = "";
+    if (!c.games.length) {
+      g.innerHTML = '<div class="empty">Nothing logged yet. Anything you log in ' +
+                    'Hearthsmith — or in any Ragesmith game later — becomes part of ' +
+                    'this same character.</div>';
+    }
+    c.games.forEach(function (x) {
+      var d = document.createElement("div");
+      d.className = "row";
+      d.innerHTML = '<span>' + x.game + '</span><span>' + x.events +
+                    (x.events === 1 ? ' event' : ' events') +
+                    (x.first ? ' &middot; since ' + x.first : '') + '</span>';
+      g.appendChild(d);
+    });
+
+    var m = $("most"); m.innerHTML = "";
+    if (!c.mostLogged.length) m.innerHTML = '<div class="empty">Nothing yet.</div>';
+    c.mostLogged.forEach(function (x) {
+      var d = document.createElement("div");
+      d.className = "row";
+      d.innerHTML = '<span>' + x.label + '</span><span>' + x.count + '&times;</span>';
+      m.appendChild(d);
+    });
+
+    $("foot").innerHTML =
+      (c.firstDay ? "Keeping the fire since " + c.firstDay + ".<br>" : "") +
+      "This character is computed from your ledger, not stored — so it can never " +
+      "disagree with what you actually did.<br>" +
+      "Everything stays on this device. Schema v" + L.SCHEMA_VERSION +
+      (c.unknownKinds ? " &middot; " + c.unknownKinds + " event(s) from a newer version, kept untouched." : "");
+  }
+
+  $("name").addEventListener("input", function () { saveName(this.value.trim()); });
+  $("name").addEventListener("blur", render);
+
+  fetch("catalog.json").then(function (r) { return r.json(); })
+    .then(function (cat) { window.__catalog = cat; render(); })
+    .catch(function () { render(); });   // the sheet works without labels
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>

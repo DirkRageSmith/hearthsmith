@@ -14,10 +14,26 @@ a few weeks is the same thing that — if it keeps going — becomes the world.
 
 ## Status
 
-**Tier 0 — The Ledger. LIVE and on a phone. Slice 0.6 CLOSED 2026-08-31.**
+**Tier 1 — The First Home. Slice 1.1, the shop.**
 <https://dirkragesmith.github.io/hearthsmith/>
 
-Slices 0.1–0.7 are done. The app runs, the doctor is HEALTHY, and 22 tests pass.
+Tier 0 is complete. Its gate was revised and met on 2026-08-31 (**ADR-017**): the
+three-outside-testers requirement moved to the *end of Tier 1*, where there is a game to
+react to rather than a habit tracker. The app runs, the doctor is HEALTHY, and **32 tests**
+pass.
+
+**What is live and what is not, as of 2026-08-31 12:16 — fetched, not assumed:**
+
+| | |
+|---|---|
+| `/` | **200** — the day view, shipped 2026-08-31 |
+| `/profile.html` | **404** — the character sheet exists only on disk |
+| `/character.js` | **404** — same |
+| service worker | live `v0.2.0` vs local `v0.3.0` |
+
+The character system, the `ragesmith.ledger.v1` migration and the jump to 32 tests were all
+built in one Cowork session and **none of it is committed or pushed.** Until it is, this
+README's claims about it describe a machine, not a product.
 
 **Verified on real hardware, which is the only verification that counted here.** Matt
 installed it on his phone, logged *Got out of bed*, closed the app fully, and reopened it
@@ -25,8 +41,11 @@ to find the XP and Embers still there. That mattered because an emulated viewpor
 phone: FitFlexr's touch handling was completely dead on phones for two weeks while working
 perfectly with a mouse.
 
-**Everything left in Tier 0 is distribution and contains no code** — slice 0.8, three
-people, seven days each. See [../NEXT.md](../NEXT.md).
+**Tier 0's distribution requirement did not disappear — it moved.** ADR-017 pushed the
+three-testers gate to the end of Tier 1, on the reasoning that asking people to evaluate a
+habit tracker with no game in it spends scarce goodwill on the wrong thing. That revision
+names its own failure mode: *"wait until it's good enough to show people"* is how a thing
+never gets shown, and Tier 1's gate **must not move again.** See [../NEXT.md](../NEXT.md).
 
 ---
 
@@ -71,8 +90,11 @@ browser is not a test.
 | 0.3 | Action catalogue | `catalog.json` — 33 actions across 5 skills, 4 effort tiers | ✅ **2026-08-25** |
 | 0.4 | Balances + levels | Every total computed from the ledger (`sum(grants) − sum(cost)`), never stored | ✅ **2026-08-25** |
 | 0.5 | Day view | The app — hearth, Embers, XP, five skill bars, today's log, backfill toggle | ✅ **2026-08-25** |
-| 0.6 | **Ship it** | Live on Pages, HTTP 200 verified, on Matt's phone home screen | ☐ **← next — see [../NEXT.md](../NEXT.md)** |
+| 0.6 | **Ship it** | Live on Pages, HTTP 200 verified, on Matt's phone home screen | ✅ **2026-08-31** |
 | 0.7 | Export | One button dumps the whole ledger as JSON (ADR-005, non-negotiable) | ✅ **2026-08-25** |
+| — | **Tier 0 gate** | Revised and met — ADR-017 moved the three testers to the end of Tier 1 | ✅ **2026-08-31** |
+| 1.0 | Character sheet | `character.js` + `profile.html`, computed from the ledger, never stored | ⚠️ **built, not pushed** |
+| 1.1 | **The shop** | Spend Embers, the item appears in a room, survives a refresh | ☐ **← current — see [../NEXT.md](../NEXT.md)** |
 
 **Health:** run `node tools/doctor.mjs` from the studio root — 22 ledger tests, an
 end-to-end storage simulation, the harm-prevention rules mechanised, and doc-vs-code drift
@@ -86,7 +108,9 @@ detection. Currently **HEALTHY**.
 | `catalog.json` | The curated action list. Authored, never generated (ADR-012). |
 | `currencies.json` | The currency registry. An ID not in here is a hard validation error. |
 | `index.html` | The app. Dark-first, thumb-sized targets, no build step. |
-| `tests.js` / `tests.html` | 22 tests. `node tests.js`, or open `tests.html` in a browser. |
+| `tests.js` / `tests.html` | 32 tests. `node tests.js`, or open `tests.html` in a browser. |
+| `character.js` | The cross-game character layer — levels, standings, crest. **Computed from the ledger, never stored**, so any future game gets the same character for free. |
+| `profile.html` | The character sheet: procedural crest, five trees, and a per-game breakdown that shows the shared world working. |
 | `sw.js` · `manifest.json` · `icon.svg` | Installable and offline-first — a bad day with no signal is still a day you can log. |
 
 **Running it locally:** serve the folder, don't open the file directly —
@@ -205,6 +229,29 @@ reads, and an undocumented park becomes an abandonment.*
 > died twice).
 >
 > **Next: slice 0.6 — ship it.** Everything is built. Nobody has it. See `../NEXT.md`.
+>
+> **2026-08-31 — shipped, then the character arrived.** Slice 0.6 closed on hardware. Then
+> Matt overruled the three-tester gate, correctly (**ADR-017**): Tier 0 is a habit tracker
+> with no game in it, and asking skeptical non-technical friends to review that spends
+> scarce goodwill on validating a data model. Distribution moved to the end of Tier 1.
+>
+> Built the same day, all green at **32 tests**:
+> - **`character.js`** — one character across every Ragesmith game, **computed from the
+>   ledger and never stored**, so it can never disagree with the events. Every game ships to
+>   the same origin, so the shared `localStorage` already makes this work with no server.
+> - **`profile.html`** — the sheet. A **procedural crest** with five arms that reach further
+>   as each tree grows: deterministic, changes visibly as you do, and needs no art at all.
+>   Permanent standings, a calling earned at level 3, and a per-game breakdown that makes the
+>   shared world visible.
+> - **Ledger moved to `ragesmith.ledger.v1`** (ADR-019). It belongs to the player, not to one
+>   game. Migration copies and **never deletes** — two tests pin that.
+> - **The Community tree was locked for isolated players** and the old test passed it,
+>   because it checked whether a tier was *named* `community` rather than what it *required*
+>   (ADR-020). Added `answered_someone` and `left_kind_words`; actions now carry
+>   `needs: ["out"|"people"|"money"]`, and every skill must have a solo-reachable one.
+>   **Second time a mechanised product rule has caught something real.**
+>
+> **Next: slice 1.1 — the shop.** Tier 1 is open and Embers finally buy something.
 >
 > **2026-08-29 (slice 0.6 — PUBLISHED, not yet closed)** — Four days passed between "the
 > app is built and green" and anybody being able to open it, which is the failure this

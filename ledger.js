@@ -23,8 +23,23 @@
   "use strict";
 
   const SCHEMA_VERSION = 1;
-  const SOURCE = "hearthsmith@0.2.0";
-  const STORAGE_KEY = "hearthsmith.ledger.v1";
+  const SOURCE = "hearthsmith@0.3.0";
+
+  /* THE LEDGER BELONGS TO THE PLAYER, NOT TO ONE GAME.
+   *
+   * It was `hearthsmith.ledger.v1` until 2026-08-31, which made Hearthsmith
+   * special in a world where the whole thesis is that every game writes to one
+   * shared ledger — game #4 reading a key named after game #1 would be absurd.
+   *
+   * Every Ragesmith game ships to the same origin (dirkragesmith.github.io), so
+   * localStorage is genuinely shared between them already. That is what makes
+   * one character across all games work with no server at all.
+   *
+   * Migration is NON-DESTRUCTIVE: the old key is copied, never deleted. If this
+   * goes wrong, someone's medication and sleep history is what is lost, so the
+   * old copy stays on disk as a backup forever. It costs a few KB. */
+  const STORAGE_KEY = "ragesmith.ledger.v1";
+  const LEGACY_KEYS = ["hearthsmith.ledger.v1"];
 
   /* Kinds this version understands. An event with any other kind is PRESERVED
    * but contributes nothing to balances — the forward-compatibility rule from
@@ -190,15 +205,41 @@
     return typeof localStorage !== "undefined" ? localStorage : null;
   }
 
+  /* Copy a legacy ledger forward the first time we see one. Idempotent, and it
+   * never deletes the source. Returns the number of events migrated. */
+  function migrate() {
+    const s = store();
+    if (!s) return 0;
+    if (s.getItem(STORAGE_KEY) !== null) return 0; // already on the new key
+    for (const key of LEGACY_KEYS) {
+      const raw = s.getItem(key);
+      if (raw === null) continue;
+      let events;
+      try { events = deserialize(raw); }
+      catch (e) {
+        console.error("ragesmith: legacy ledger at " + key + " is unreadable; leaving it alone", e);
+        continue;
+      }
+      s.setItem(STORAGE_KEY, serialize(events));
+      console.info(
+        "ragesmith: migrated " + events.length + " events from " + key +
+        " to " + STORAGE_KEY + ". The old key is kept as a backup and is never deleted."
+      );
+      return events.length;
+    }
+    return 0;
+  }
+
   function read() {
     const s = store();
     if (!s) return [];
     try {
+      migrate();
       return deserialize(s.getItem(STORAGE_KEY));
     } catch (e) {
       /* Never destroy a ledger we failed to parse. Someone's medication
        * history is not something to recover from by wiping. */
-      console.error("hearthsmith: ledger unreadable, refusing to overwrite", e);
+      console.error("ragesmith: ledger unreadable, refusing to overwrite", e);
       throw e;
     }
   }
@@ -265,9 +306,9 @@
   }
 
   return {
-    SCHEMA_VERSION, SOURCE, STORAGE_KEY, KNOWN_KINDS, REQUIRED_FIELDS,
+    SCHEMA_VERSION, SOURCE, STORAGE_KEY, LEGACY_KEYS, KNOWN_KINDS, REQUIRED_FIELDS,
     nowIso, ulid, newEvent, validate, currencyIdSet,
-    serialize, deserialize, read, write, append, appendAndSave,
+    serialize, deserialize, read, write, append, appendAndSave, migrate,
     balances, countUnknownKinds, levelFor, localDayKey, eventsOn
   };
 });

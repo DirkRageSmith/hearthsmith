@@ -10,9 +10,20 @@
     "resolved amounts are stored on each event at log time, so a rebalance in 2031",
     "cannot rewrite what someone earned in 2026.",
     "",
-    "EVERY TIER IS REACHABLE FROM BED. That is a hard product rule, not a nicety:",
-    "if the lowest-effort path to progress required leaving the house, the game",
-    "would abandon its users on their worst days. Check any new entry against it.",
+    "EVERY SKILL MUST BE REACHABLE ALONE, INDOORS, WITHOUT MONEY. That is a hard",
+    "product rule, not a nicety: if a skill's only path to progress required leaving",
+    "the house or having people, the game would lock that whole tree for anyone",
+    "isolated — which is a large part of who this is built for.",
+    "",
+    "`needs` names what an action requires beyond the player: \"out\" (leaving the",
+    "house), \"people\" (someone else), \"money\". An action with NO `needs` is solo-",
+    "reachable, and every skill must have at least one. tests.js enforces it.",
+    "",
+    "Found 2026-08-31: the Community tree had only reached_out / helped_someone /",
+    "volunteered — all three requiring other people — so it was unreachable for an",
+    "isolated player, and the old test passed it because its tier is literally named",
+    "\"community\". A test that checks the label rather than the property is not a test.",
+    "Fixed by adding answered_someone and left_kind_words.",
     "",
     "Note that 'hard' pays the MOST. These are the actions that cost the most when",
     "things are bad, and the award table says so out loud."
@@ -52,8 +63,8 @@
     { "verb": "slept_enough",          "label": "Got enough sleep",            "skill": "body",      "tier": "sustained" },
     { "verb": "moved_body",            "label": "Moved my body",               "skill": "body",      "tier": "sustained" },
     { "verb": "shower",                "label": "Showered",                    "skill": "body",      "tier": "hard" },
-    { "verb": "left_the_house",        "label": "Left the house",              "skill": "body",      "tier": "hard" },
-    { "verb": "attended_appointment",  "label": "Went to an appointment",      "skill": "body",      "tier": "hard" },
+    { "verb": "left_the_house",        "label": "Left the house",              "skill": "body",      "tier": "hard",      "needs": ["out"] },
+    { "verb": "attended_appointment",  "label": "Went to an appointment",      "skill": "body",      "tier": "hard",      "needs": ["out"] },
 
     { "verb": "made_bed",              "label": "Made the bed",                "skill": "home",      "tier": "upkeep" },
     { "verb": "tidied_surface",        "label": "Cleared one surface",         "skill": "home",      "tier": "upkeep" },
@@ -68,7 +79,7 @@
     { "verb": "ate_a_vegetable",       "label": "Ate something green",         "skill": "kitchen",   "tier": "upkeep" },
     { "verb": "cooked_a_meal",         "label": "Cooked a real meal",          "skill": "kitchen",   "tier": "sustained" },
     { "verb": "packed_food",           "label": "Prepped food for later",      "skill": "kitchen",   "tier": "sustained" },
-    { "verb": "bought_groceries",      "label": "Got groceries",               "skill": "kitchen",   "tier": "sustained" },
+    { "verb": "bought_groceries",      "label": "Got groceries",               "skill": "kitchen",   "tier": "sustained", "needs": ["out", "money"] },
 
     { "verb": "noted_an_idea",         "label": "Wrote down an idea",          "skill": "craft",     "tier": "upkeep" },
     { "verb": "learned_something",     "label": "Learned something small",     "skill": "craft",     "tier": "upkeep" },
@@ -77,8 +88,10 @@
     { "verb": "wrote_something",       "label": "Wrote something",             "skill": "craft",     "tier": "sustained" },
     { "verb": "worked_on_project",     "label": "Worked on a project",         "skill": "craft",     "tier": "sustained" },
 
-    { "verb": "reached_out",           "label": "Messaged someone I care about", "skill": "community", "tier": "community" },
-    { "verb": "helped_someone",        "label": "Helped someone",              "skill": "community", "tier": "community" },
-    { "verb": "volunteered",           "label": "Volunteered",                 "skill": "community", "tier": "community" }
+    { "verb": "reached_out",           "label": "Messaged someone I care about", "skill": "community", "tier": "community", "needs": ["people"] },
+    { "verb": "answered_someone",      "label": "Answered someone's question",  "skill": "community", "tier": "upkeep" },
+    { "verb": "left_kind_words",       "label": "Said something kind online",   "skill": "community", "tier": "upkeep" },
+    { "verb": "helped_someone",        "label": "Helped someone",              "skill": "community", "tier": "community", "needs": ["people"] },
+    { "verb": "volunteered",           "label": "Volunteered",                 "skill": "community", "tier": "community", "needs": ["out", "people"] }
   ]
 }

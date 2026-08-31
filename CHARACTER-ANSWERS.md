@@ -165,7 +165,34 @@ accrual; everything below can wait for something real to react to.**
 
 ---
 
-## One tension to resolve before it ships
+## The farm animals — KEEP THIS, and here is the version that is safe
+
+> *"my fave part of zelda was chickens as a kid so i really like the ur diet decides ur farm
+> animal thing i think its adorable and hilarious"* — 2026-08-31
+
+**The reference is the design spec.** Zelda's cuccos are never a punishment. They accumulate,
+they get absurd, and if you swing at one the sky comes for you — but nothing about them ever
+implies you are living wrong. They are a *presence*, not a verdict.
+
+**The rule that makes it safe: the animals never leave.** ADR-006 already forbids taking
+anything back, and applied here it does all the work — cows do not vanish when you start
+eating vegetables, you simply *also* get chickens. The farm becomes a cumulative portrait of
+everything you have ever eaten rather than a scoreboard of what you are eating now.
+
+That deletes the original tension rather than managing it. There is no *"until you eat a more
+varied diet"* because there is no state to escape. A town with two hundred cows is not failing
+at anything; it is funny, and it is a true picture of a person.
+
+Design notes that follow:
+
+- **Variety produces a menagerie; repetition produces a crowd.** Neither is better. One is
+  just funnier, and the player discovers that themselves.
+- **Never rank the farms.** No "balanced diet" achievement, no comparison between towns —
+  that is the self-care-leaderboard rule (ADR-006) arriving through the back door.
+- The animals are a **read** on the Kitchen skill's verbs, not a new event type or currency.
+  Ordinary events, rendered.
+
+## One tension already resolved, kept for the reasoning
 
 > *"maybe you eat a lot of beef so your town gets overpopulated with cows until you eat a
 > more varied diet idk"*

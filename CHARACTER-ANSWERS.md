@@ -174,23 +174,50 @@ accrual; everything below can wait for something real to react to.**
 they get absurd, and if you swing at one the sky comes for you — but nothing about them ever
 implies you are living wrong. They are a *presence*, not a verdict.
 
-**The rule that makes it safe: the animals never leave.** ADR-006 already forbids taking
-anything back, and applied here it does all the work — cows do not vanish when you start
-eating vegetables, you simply *also* get chickens. The farm becomes a cumulative portrait of
-everything you have ever eaten rather than a scoreboard of what you are eating now.
+**A cumulative farm was proposed and Matt rejected it**, correctly:
 
-That deletes the original tension rather than managing it. There is no *"until you eat a more
-varied diet"* because there is no state to escape. A town with two hundred cows is not failing
-at anything; it is funny, and it is a true picture of a person.
+> *"i would like the 200 cows to be replaced with other animals and vegetables as you log, i
+> don't want 1000 cows in 10 years, but if all you eat is animals and not enough veggies i
+> would like the cows chickens and pigs to get a little annoying just visually and maybe
+> sound eventually"*
+
+A farm that only ever grows stops being a picture of who you are now. So:
+
+**Ratio over a recent window, with a fixed farm size.** The farm reads roughly the last 30
+days, not the whole ledger. **Composition changes; population does not grow.** Eat mostly
+meat and a same-sized farm fills with cows, pigs and chickens; log vegetables and they are
+displaced by crops, beehives, an orchard. No thousand cows in ten years, by construction.
+
+**This is not confiscation and does not touch ADR-006's no-taking rule.** Nothing the player
+*bought* is removed. The farm is generated scenery, a read on what was logged — the same way
+a balance is a read on `grants`. Purchased buildings and furnishings are permanent as ever.
+
+**Three guarantees that keep the annoyance safe:**
+
+1. **One action always visibly helps.** `ate_a_vegetable` ("Ate something green") is an
+   **upkeep-tier** verb — reachable from bed on the worst day of your life. The crowding must
+   never require a week of good eating to ease; that is the shape of a streak, and streaks
+   are forbidden.
+2. **A low ceiling, and it is comedic.** Crowded, clucking, a cow in the doorway. Never "your
+   town looks bad." The foreseeable harm is a depressed player eating what they can manage
+   and finding the game has become unpleasant *precisely when they are struggling* — so the
+   ceiling exists to make that impossible rather than unlikely.
+3. **Cosmetic only. It may never gate, gate-keep, or cost.** No blocked purchase, no reduced
+   Embers, no locked item. If the farm ever affects progression, it has become a penalty.
+
+**Sound is the risky half and should ship last.** Visual crowding is glanceable and easy to
+ignore; audio follows you. The test: *if a player would want to mute it, it has crossed from
+comedy into nagging.* Prefer sound while actively viewing the farm over ambient-on-open.
 
 Design notes that follow:
 
-- **Variety produces a menagerie; repetition produces a crowd.** Neither is better. One is
-  just funnier, and the player discovers that themselves.
-- **Never rank the farms.** No "balanced diet" achievement, no comparison between towns —
-  that is the self-care-leaderboard rule (ADR-006) arriving through the back door.
-- The animals are a **read** on the Kitchen skill's verbs, not a new event type or currency.
-  Ordinary events, rendered.
+- **Variety produces a menagerie; repetition produces a crowd.** Neither is a failure state.
+  One is just funnier, and the player works that out themselves.
+- **Never rank the farms.** No "balanced diet" achievement, no comparing towns — that is the
+  self-care-leaderboard rule (ADR-006) arriving through a side door.
+- The animals are a **read** on the Kitchen verbs, not a new event type or currency. Ordinary
+  events you already log, rendered as livestock. **It costs nothing schema-wise** — every meal
+  already in the ledger is a cow that has not been drawn yet.
 
 ## One tension already resolved, kept for the reasoning
 

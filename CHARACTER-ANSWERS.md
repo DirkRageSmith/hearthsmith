@@ -7,6 +7,22 @@ the brief implies — do not re-ask what is settled below.
 **Nothing here is code yet, and that is correct.** These are decisions to be frozen into
 `ECONOMY.md` and an ADR, in the same order the event schema was: decide, freeze, then build.
 
+> ### ✅ FROZEN 2026-09-01 — where each "still open" item below landed
+>
+> | Open item | Resolved as |
+> |---|---|
+> | The random point's mechanism | `hash(level-up ULID) mod 6`, uniform — ADR-024 |
+> | The actual curve formula | `300 × 1.01639^(n-1)`, flat at 1500 from L100 — ECONOMY §6 |
+> | Which actions raise which stats | Draft table in ECONOMY §6; affinity stored on the event, so it stays tunable |
+> | Where a character sheet lives | Local sheet + mirrored read-only summary of your partner's — **ADR-025** |
+> | What crosses between two ledgers | A derived summary. Never earn events. — ADR-025 |
+> | Are stats visible between partners | Yes, at summary granularity only — ADR-025 |
+> | Skills ↔ stats (brief Q2) | Affinity in `grants` at log time, tallied at level-up — ADR-024 |
+> | Bonded-party XP: shared or bonus | **Still open — parties deferred entirely, 2026-09-01** |
+>
+> The party section below is **captured intent, not frozen design.** Nothing in it is
+> committed to. The one rule that *is* fixed: solo must always be possible (ADR-020).
+
 ---
 
 ## Settled

@@ -1,5 +1,17 @@
 # CHARACTER-BRIEF — the interview that must happen before stats are written
 
+> ### ✅ RESOLVED 2026-09-01 — this interview has been run. Do not run it again.
+>
+> The answers are frozen in **`ECONOMY.md` §6** and recorded as **ADR-024** (the stat
+> layer, with every rejected alternative and the mandatory worked example) and **ADR-025**
+> (where a character sheet lives across two phones).
+>
+> **Q9 — parties and bonded pairs — was deliberately left open.** Matt's call:
+> *"maybe we don't need to make parties yet."* That is the only question still available
+> to ask, and `CHARACTER-ANSWERS.md` holds the captured intent for whenever it is.
+>
+> This file is kept for its reasoning and its constraint list, not as a task.
+
 **How to use this file.** Open a session in `C:\Projects\ragesmith` and say:
 
 > `read hearthsmith/CHARACTER-BRIEF.md and interview me`

@@ -11,7 +11,7 @@ the brief implies — do not re-ask what is settled below.
 >
 > | Open item | Resolved as |
 > |---|---|
-> | The random point's mechanism | `hash(level-up ULID) mod 6`, uniform — ADR-024 |
+> | The random point's mechanism | **Superseded — there is no random point.** 4 derived per level + a flat +1 to all six every fifth level. See ADR-024, "the floor" |
 > | The actual curve formula | `300 × 1.01639^(n-1)`, flat at 1500 from L100 — ECONOMY §6 |
 > | Which actions raise which stats | Draft table in ECONOMY §6; affinity stored on the event, so it stays tunable |
 > | Where a character sheet lives | Local sheet + mirrored read-only summary of your partner's — **ADR-025** |
@@ -48,6 +48,13 @@ Two consequences worth stating now:
 it is reproducible from the ledger? **The last option matters more than it sounds** —
 balances are computed and never stored, so if the roll is not derivable from the ledger it
 cannot be recomputed on a second device and the two will silently disagree.
+
+> **RESOLVED 2026-09-01 — and the answer was to remove the random point entirely.** It was
+> first frozen as a ULID-seeded uniform roll, then replaced the same day by **4 derived
+> points per level plus a flat +1 to all six every fifth level.** Running the worked example
+> out to level 100 showed a rarely-fed stat gets rounded to ~2 points *for a century*, so the
+> floor had to be a guarantee rather than a probability. Nothing is random now, which makes
+> the reproducibility worry above moot rather than solved. **ADR-024, "the floor."**
 
 ### The curve — one day at level 1, one month at level 100, then flat forever
 
@@ -173,7 +180,8 @@ accrual; everything below can wait for something real to react to.**
 
 1. **Which actions raise which stats.** The mapping from the five skills and 33 verbs onto
    STR/VIT/SPD/AGI/DEF/LUK. Nothing is decided.
-2. **The random point's mechanism** (see above — reproducibility is the constraint).
+2. ~~**The random point's mechanism.**~~ **Closed 2026-09-01 — no random point exists.**
+   Replaced by a flat +1 to all six every fifth level. See the banner at the top.
 3. **The two-character bridge.** The largest open question, and the one blocking anything
    multiplayer.
 4. **Are stats visible between partners?** Brief Q8, unanswered.

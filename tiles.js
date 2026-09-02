@@ -37,33 +37,58 @@
 
   const SIZE = 16;
 
+  /* THE PALETTE — 16-bit JRPG, circa 1994.
+   *
+   * Aesthetic direction set by Matt 2026-09-02: Super Mario RPG, EarthBound,
+   * Final Fantasy Mystic Quest (ADR-030). What those three actually share is
+   * not their characters — which are exactly the part nobody may borrow — but
+   * three mechanical properties of their colour, all of which are style rather
+   * than expression and therefore ours to use:
+   *
+   *   1. HUE-SHIFTED SHADING. Shadows rotate toward purple/blue, highlights
+   *      toward yellow. This is the single biggest thing that makes pixel art
+   *      read as SNES-era rather than as flat modern pixel art, and it is why
+   *      the first palette here — naturalistic browns shaded with darker
+   *      browns — looked cozy but generic.
+   *   2. AN OUTLINE THAT IS NOT BLACK. `a` is a deep plum. Pure black outlines
+   *      read as cheap and flatten everything they touch; a dark chromatic
+   *      outline holds the form and stays warm.
+   *   3. HIGH SATURATION WITH WIDE VALUE STEPS. The SNES gave 15 colours per
+   *      sprite, so every one had to earn its place. Adjacent tones here are
+   *      deliberately far apart in value — timid mid-tones are what make pixel
+   *      art look muddy at small sizes.
+   *
+   * KEYS ARE FROZEN. All 91 sprite grids index into these letters, so a key
+   * may be re-valued but never renamed or removed. Retuning the look is a
+   * palette edit and touches no sprite — which is the whole reason the art
+   * lives behind this seam. */
   const PALETTE = {
-    a: "#2b211c", // outline / deep shadow
-    b: "#4a3728", // wood dark
-    c: "#6b4f36", // wood
-    d: "#8a6a48", // wood light
-    e: "#b08d64", // wood pale
-    f: "#ece3d6", // cream / linen
-    g: "#c9b39a", // plaster shadow
-    h: "#7d8590", // metal
-    i: "#565f66", // metal dark
-    j: "#b5674f", // cloth, warm
-    k: "#8f4a37", // cloth, warm dark
-    l: "#6f8a72", // cloth, cool
-    m: "#4d6551", // cloth, cool dark
-    n: "#5f8f52", // leaf
-    o: "#e0b25c", // brass
-    p: "#ff9d4d", // ember
-    q: "#ffd9a0", // glow
-    r: "#a8cbd8", // glass
-    s: "#6d93a3", // glass, deep
-    t: "#3b2f2a", // near black
-    u: "#9aa3ab", // steel, light
-    v: "#7a5a3f", // wainscot
-    w: "#d8c3a5", // wall
-    x: "#5d4530", // baseboard
-    y: "#7a5636", // floor plank
-    z: "#8a6440"  // floor plank, light
+    a: "#2d1b33", // outline / deep shadow — plum, never black
+    b: "#5a3421", // wood, deepest
+    c: "#8a4f2a", // wood, mid
+    d: "#b57a42", // wood, light
+    e: "#e0a866", // wood, pale highlight
+    f: "#fff3dc", // cream / linen
+    g: "#d9b98f", // plaster shadow
+    h: "#8391a8", // metal
+    i: "#4d5872", // metal, dark (blue-shifted, not grey)
+    j: "#d85a4a", // cloth, warm
+    k: "#962f38", // cloth, warm dark
+    l: "#5fae7a", // cloth, cool
+    m: "#2f7355", // cloth, cool dark
+    n: "#6dc24a", // leaf
+    o: "#f5c542", // brass
+    p: "#ff8a3d", // ember
+    q: "#ffe8a8", // glow
+    r: "#8fd4e8", // glass
+    s: "#3f7fa8", // glass, deep
+    t: "#3a2740", // near black (still plum-leaning)
+    u: "#b6c2d4", // steel, light
+    v: "#8f5a30", // wainscot
+    w: "#f0d6a8", // wall
+    x: "#6b3f22", // baseboard
+    y: "#a3652f", // floor plank
+    z: "#c07d3c"  // floor plank, light
   };
 
   /* ---- the room shell -------------------------------------------------- */

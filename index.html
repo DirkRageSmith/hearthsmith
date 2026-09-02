@@ -387,10 +387,16 @@
                      '</time>';
       /* Hold to retract (ADR-027) — today's log only, and only a thing you
          did, never a purchase; the room is the record of what got built and
-         nothing built is ever taken back. */
+         nothing built is ever taken back.
+
+         The tooltip says only what the gesture does. An earlier draft read
+         "for a mis-tap, not for a bad day", which is true of the DESIGN and
+         wrong as shipped COPY: it tells someone their reason for correcting
+         their own log is being judged. §4 rule 4 shuts that door and this is
+         the register it shuts it against. */
       if (e.kind === "earn" && L.canRetract(events, e.id).ok) {
         li.classList.add("holdable");
-        li.title = "Hold to retract — for a mis-tap, not for a bad day";
+        li.title = "Hold to undo a mis-tap";
         attachHold(li, e.id);
       }
       ul.appendChild(li);

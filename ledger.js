@@ -306,11 +306,33 @@
    * event's grants, subtracted. A subject that is not in the ledger (deleted
    * by nobody — there is no delete — but conceivably from a different device's
    * export) subtracts nothing rather than throwing. */
-  function eventDelta(ev, byId) {
+  function eventDelta(ev, byId, applied) {
     const out = Object.create(null);
     if (!ev || KNOWN_KINDS.indexOf(ev.kind) === -1) return out; // preserve, don't interpret
     if (ev.kind === "retract") {
-      const target = ev.subject ? byId[ev.subject] : null;
+      /* AT MOST ONCE PER SUBJECT. An event can only be un-done once; a second
+       * retraction of the same thing is a duplicate, not a second correction.
+       *
+       * This is not defensive coding, it is what makes ADR-023 true. That
+       * design gets sync for free because two ledgers merge by UNION BY ID —
+       * no conflict resolution, nothing to get wrong — and that only holds if
+       * every kind is IDEMPOTENT under union. Two devices each correcting the
+       * same mis-tap produce two retract events with different ids and the
+       * same subject, and the union contains both. Subtracting twice drove
+       * `core:xp` NEGATIVE, against the one thing currencies.json promises
+       * about it: "Only ever goes up. Never spent, never lost."
+       *
+       * `applied` is the set of subjects already accounted for in this pass.
+       * Callers that replay in a fixed order share one set across the whole
+       * replay; a caller without one gets no dedupe, so it is never optional
+       * in practice — both callers below pass one. */
+      const subject = ev.subject;
+      if (!subject) return out;
+      if (applied) {
+        if (applied[subject]) return out;
+        applied[subject] = true;
+      }
+      const target = byId[subject] || null;
       if (target && target.grants) {
         for (const [cur, amt] of Object.entries(target.grants)) {
           if (typeof amt === "number") out[cur] = (out[cur] || 0) - amt;
@@ -335,8 +357,9 @@
     const evs = events || [];
     const byId = idIndex(evs);
     const totals = Object.create(null);
+    const applied = Object.create(null);
     for (const ev of evs) {
-      const d = eventDelta(ev, byId);
+      const d = eventDelta(ev, byId, applied);
       for (const cur of Object.keys(d)) totals[cur] = (totals[cur] || 0) + d[cur];
     }
     /* ECONOMY.md §2.8 / ADR-027: Embers floor at zero. A retraction can only
@@ -358,8 +381,9 @@
     const byId = idIndex(evs);
     const sorted = evs.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     const running = Object.create(null), peak = Object.create(null);
+    const applied = Object.create(null);
     for (const ev of sorted) {
-      const d = eventDelta(ev, byId);
+      const d = eventDelta(ev, byId, applied);
       for (const cur of Object.keys(d)) {
         running[cur] = (running[cur] || 0) + d[cur];
         peak[cur] = Math.max(peak[cur] || 0, running[cur]);
@@ -394,7 +418,18 @@
     const now = (opts && opts.now) || nowIso();
     const target = (events || []).find((e) => e && e.id === subjectId);
     if (!target) return { ok: false, why: "no such event" };
-    if (localDayKey(target.ts) !== localDayKey(now)) return { ok: false, why: "not from today" };
+    /* LOGGED today, not DATED today — ADR-027's own words, and the difference
+     * matters more than it looks. Backfill mode (ADR-011) writes ts=yesterday
+     * with logged_at=today, and tapping the wrong row while in backfill mode is
+     * the single likeliest mis-tap there is. Keying this window on `ts` locked
+     * the correction out of exactly the case it exists for.
+     *
+     * It gives nothing away, either. The window is meant to separate a mis-tap
+     * (time-local, caught in seconds) from re-judging your own past
+     * (retrospective), and `logged_at` is precisely the field that measures the
+     * first. An action both logged and dated yesterday is still closed. */
+    const when = target.logged_at || target.ts;
+    if (localDayKey(when) !== localDayKey(now)) return { ok: false, why: "not from today" };
     return { ok: true, why: null };
   }
 

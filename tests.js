@@ -638,7 +638,18 @@
       });
 
       t("retract: canRetract refuses an event outside today's window", function () {
-        const old = earnEv(10, "body", 1, YESTERDAY);
+        /* Both LOGGED and dated yesterday. This test used to backdate only
+         * `ts`, which left `logged_at` at today — so it was really asserting
+         * that an action backfilled minutes ago is closed to correction. It
+         * passed against a window keyed on `ts`, and it was testing the wrong
+         * property to do it: the rule is "logged today" (ADR-027), and an
+         * event backfilled today has been logged today. */
+        const old = L.newEvent({
+          id: L.ulid(Date.now() + (seq++)),
+          verb: "brush_teeth", skill: "body",
+          ts: YESTERDAY, logged_at: YESTERDAY,
+          grants: { "core:xp": 10 }
+        });
         ok(!L.canRetract([old], old.id).ok, "a retraction of yesterday was allowed");
       });
 
@@ -649,6 +660,67 @@
 
       t("retract: canRetract refuses an unknown subject", function () {
         ok(!L.canRetract([], "nope").ok, "a retraction of a nonexistent event was allowed");
+      });
+
+      /* ---- the merge case, which is where retraction actually gets hard ----
+       * ADR-023's whole value is that two devices reconcile by UNION BY ID:
+       * no conflict resolution, nothing to get wrong. That guarantee only
+       * holds if every event kind is IDEMPOTENT under union. Two devices that
+       * each retract the same mis-tap produce two retract events with
+       * different ids and the same subject, and the union contains both.
+       *
+       * These were missing from the first pass. Every test above builds at
+       * most one retraction per subject, so the happy path and all the named
+       * edge cases passed while the one case the sync design depends on was
+       * never exercised. */
+      t("retract: retracting the same event twice subtracts once", function () {
+        const e = earnEv(10, "home", 1);
+        const once = L.balances([e, retractOf(e)]);
+        const twice = L.balances([e, retractOf(e), retractOf(e)]);
+        eq(twice["core:xp"], once["core:xp"], "a second retraction of the same event subtracted again");
+        eq(twice["skill:home"], once["skill:home"], "a second retraction demoted a skill again");
+      });
+
+      t("retract: core:xp can never go negative, whatever the ledger contains", function () {
+        /* currencies.json, core:xp: "Only ever goes up. Never spent, never
+         * lost." The reason is written down there too — for this audience a
+         * number that can fall on its own is a number that can be used
+         * against you. A negative one is strictly worse than a falling one. */
+        const e = earnEv(10, "body", 1);
+        const sequences = [
+          [e, retractOf(e)],
+          [e, retractOf(e), retractOf(e)],
+          [e, retractOf(e), retractOf(e), retractOf(e)],
+          [retractOf(e), e, retractOf(e)]
+        ];
+        sequences.forEach((evs, i) => {
+          const bal = L.balances(evs);
+          ok((bal["core:xp"] || 0) >= 0, `sequence ${i} drove core:xp to ${bal["core:xp"]}`);
+          Object.keys(bal).forEach((cur) => {
+            ok(bal[cur] >= 0, `sequence ${i} drove ${cur} to ${bal[cur]}`);
+          });
+        });
+      });
+
+      t("retract: an action backfilled today can still be corrected today", function () {
+        /* ADR-027 says "something LOGGED today", and the window exists because
+         * a mis-tap is caught in seconds. Backfill mode is exactly where a
+         * mis-tap happens — you are tapping yesterday's list — and such an
+         * event carries ts=yesterday with logged_at=today. Keying the window
+         * on `ts` locks the correction out of the very case it is for, while
+         * still doing nothing about genuinely re-judging the past: an event
+         * both logged and dated yesterday stays closed, as below. */
+        const backfilled = earnEv(10, "home", 1, YESTERDAY);
+        ok(L.canRetract([backfilled], backfilled.id).ok,
+           "an action backfilled today could not be corrected today");
+        const genuinelyOld = L.newEvent({
+          id: L.ulid(Date.now() + (seq++)),
+          verb: "brush_teeth", skill: "home",
+          ts: YESTERDAY, logged_at: YESTERDAY,
+          grants: { "core:xp": 10 }
+        });
+        ok(!L.canRetract([genuinelyOld], genuinelyOld.id).ok,
+           "an action logged yesterday was still open to correction");
       });
 
       if (S && shop) {

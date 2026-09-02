@@ -13,17 +13,17 @@
  * this is enforced rather than remembered. Update SHELL_HASH when it tells you
  * to; the doctor prints the value.
  */
-const CACHE = "hearthsmith-v0.4.0";
+const CACHE = "hearthsmith-v0.5.0";
 const SHELL = [
-  ".", "index.html", "profile.html",
-  "ledger.js", "character.js",
-  "catalog.json", "currencies.json",
+  ".", "index.html", "profile.html", "room.html",
+  "ledger.js", "character.js", "shop.js",
+  "catalog.json", "currencies.json", "shop.json",
   "manifest.json", "icon.svg"
 ];
 /* sha256 of the SHELL files (sorted, concatenated), first 16 hex. Maintained by
  * tools/doctor.mjs — it is the mechanism that makes "bump CACHE" impossible to
  * forget rather than merely written down. */
-const SHELL_HASH = "0859d006819f0254";
+const SHELL_HASH = "9fc041be9e8e86db";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

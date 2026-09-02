@@ -23,7 +23,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 1;
-  const SOURCE = "hearthsmith@0.4.0";
+  const SOURCE = "hearthsmith@0.5.0";
 
   /* THE LEDGER BELONGS TO THE PLAYER, NOT TO ONE GAME.
    *
@@ -116,7 +116,23 @@
     if (f.cost) extra.cost = f.cost;
     if (f.item !== undefined) extra.item = f.item;
     if (f.target !== undefined) extra.target = f.target;
-    return Object.assign({
+
+    /* `verb` and `skill` are attached ONLY when they have a value, for the same
+     * reason as the three above — and the shop is what found it necessary.
+     *
+     * They used to be set unconditionally. On an `earn` event both are always
+     * present, so nothing showed for the first two slices. On a `spend` both are
+     * undefined, and JSON.stringify drops undefined values: the event carried
+     * them in memory and lost them the moment it was saved, so `"verb" in ev`
+     * answered differently before and after a round trip. The bytes were stable
+     * either way, which is exactly why the byte-stability test never caught it —
+     * it only ever ran on earn events, where the two shapes coincide.
+     *
+     * Nothing stored changes. This removes keys that were never persisted in the
+     * first place, so it is not a schema change: it makes the in-memory event
+     * equal to the one on disk, which is what preserve-unknown-fields has to be
+     * measured against. tests.js pins it. */
+    const ev = {
       v: SCHEMA_VERSION,
       id: f.id || ulid(),
       kind: f.kind || "earn",
@@ -125,9 +141,16 @@
        * separate fields — collapsing them destroys the T1 timing signal the
        * moment backfill lands (ADR-011). */
       logged_at: f.logged_at || nowIso(),
-      actor: f.actor || "local",
-      verb: f.verb,
-      skill: f.skill,
+      actor: f.actor || "local"
+    };
+    /* Assigned here rather than in the literal so the key ORDER stays the one
+     * ECONOMY §2 documents. Order carries no meaning to any reader, but an
+     * export is something a person opens and reads, and a schema that lists its
+     * fields in one order should not write them in another. */
+    if (f.verb !== undefined) ev.verb = f.verb;
+    if (f.skill !== undefined) ev.skill = f.skill;
+
+    return Object.assign(ev, {
       trust: f.trust || "T0",
       source: f.source || SOURCE,
       subject: f.subject === undefined ? null : f.subject,

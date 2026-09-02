@@ -15,7 +15,7 @@
 })(typeof self !== "undefined" ? self : globalThis, function () {
   "use strict";
 
-  function makeSuite(L, catalog, currencies, C) {
+  function makeSuite(L, catalog, currencies, C, S, shop) {
     const results = [];
     const t = (name, fn) => {
       try { fn(); results.push({ name, ok: true }); }
@@ -49,6 +49,32 @@
       const out = L.deserialize(L.serialize([ev]))[0];
       eq(out.someFutureField, 42, "top-level unknown field was dropped");
       eq(out.meta.nested.alsoFuture[1], "b", "nested unknown field was dropped");
+    });
+
+    /* FOUND 2026-09-01 BY THE SHOP — the first code to write a non-`earn` event
+     * in anger, and the first to read the ledger back rather than append to it.
+     *
+     * newEvent() attached `verb` and `skill` unconditionally. For an earn event
+     * both are always set, so nothing showed. For a `spend` both are undefined,
+     * and JSON.stringify DROPS undefined values — so a purchase had eighteen keys
+     * in memory and sixteen after being saved and read back. `"verb" in ev` gave
+     * two different answers for the same event depending on whether it had been
+     * through storage.
+     *
+     * The bytes were stable, which is why test 1 never caught it: it only ever
+     * ran on earn events, where the two shapes coincide. An event's shape must
+     * not depend on whether it has been persisted yet, or preserve-unknown-fields
+     * is being enforced against a moving target. */
+    t("an event has the same shape in memory as it does on disk", function () {
+      [
+        L.newEvent({ verb: "brush_teeth", skill: "body", grants: { "core:xp": 10 } }),
+        L.newEvent({ kind: "spend", cost: { "core:embers": 900 },
+                     item: "home_rug_01", target: "home:self" })
+      ].forEach((ev) => {
+        const back = L.deserialize(L.serialize([ev]))[0];
+        eq(Object.keys(ev).sort().join(","), Object.keys(back).sort().join(","),
+           `${ev.kind} event changed shape when it was saved`);
+      });
     });
 
     t("appending does not strip unknown fields from existing events", function () {
@@ -358,11 +384,140 @@
       });
     }
 
+    /* ---- 11. the shop ----------------------------------------------------
+     * The shop is the FIRST code that reads the ledger rather than appending to
+     * it, so these tests are mostly about one claim: there is no inventory. What
+     * you own is a projection of your spend events and nothing else. The moment
+     * a second store exists it can disagree with the first, and the ledger stops
+     * being the truth. */
+    if (S && shop) {
+      const earn = (embers, skill, pts) =>
+        L.newEvent({ verb: "brush_teeth", skill: skill || "home",
+                     grants: { "core:xp": embers, "core:embers": embers,
+                               ["skill:" + (skill || "home")]: pts || 1 } });
+      const cheapest = shop.items.slice().sort((a, b) =>
+        (a.cost["core:embers"] || 0) - (b.cost["core:embers"] || 0))[0];
+
+      t("shop: ownership is derived from spend events, with no inventory store", function () {
+        const item = shop.items[0];
+        const evs = [earn(9999, item.skill, 400), S.buyEvent(L, item)];
+        const own = S.owned(evs);
+        eq(own.length, 1, "a purchase did not produce ownership");
+        eq(own[0].item, item.id, "wrong item owned");
+        /* The projection must survive a round trip through JSON with nothing
+         * kept on the side — that IS the no-inventory claim. */
+        eq(S.owned(L.deserialize(L.serialize(evs))).length, 1,
+           "ownership did not survive serialisation — something is being held outside the ledger");
+        eq(S.owned([]).length, 0, "an empty ledger owns something");
+      });
+
+      t("shop: you cannot buy what you cannot afford", function () {
+        const item = cheapest;
+        const poor = [earn(item.cost["core:embers"] - 1, item.skill, 400)];
+        ok(!S.canBuy(poor, item, { ledger: L }).ok, "bought an item with too few Embers");
+        const rich = [earn(item.cost["core:embers"], item.skill, 400)];
+        ok(S.canBuy(rich, item, { ledger: L }).ok, "exact-change purchase was refused");
+      });
+
+      t("shop: a purchase reduces Embers and never touches XP", function () {
+        const item = cheapest;
+        const price = item.cost["core:embers"];
+        const evs = [earn(9999, item.skill, 400)];
+        const after = L.balances(evs.concat([S.buyEvent(L, item)]));
+        eq(after["core:embers"], 9999 - price, "Embers did not fall by exactly the price");
+        eq(after["core:xp"], 9999, "a purchase touched the permanent XP record");
+      });
+
+      t("shop: an item is visible but locked until its skill level is met", function () {
+        const gated = shop.items.filter((i) => i.unlock_level > 0)[0];
+        ok(gated, "no gated item in the shop to test");
+        const none = S.view([], shop, { ledger: L, character: C });
+        const row = none.find((r) => r.item.id === gated.id);
+        ok(row, "a locked item was HIDDEN — seeing what is ahead is the reward");
+        eq(row.unlocked, false, "a gated item read as unlocked at level 0");
+      });
+
+      t("shop: nothing owned is ever taken back when the balance falls", function () {
+        /* §4 rule 2, absolute. Ownership is a fact about the past; it can never
+         * be re-decided by a later balance. */
+        const item = cheapest;
+        const evs = [earn(9999, item.skill, 400), S.buyEvent(L, item)];
+        const drained = evs.concat([
+          L.newEvent({ kind: "spend", cost: { "core:embers": 9999 },
+                       item: "something_else", target: "home:self" })
+        ]);
+        ok(L.balances(drained)["core:embers"] < 0 || true, "setup");
+        eq(S.owned(drained).some((o) => o.item === item.id), true,
+           "an item stopped being owned because the balance later fell");
+      });
+
+      t("shop: buying the same item twice is refused", function () {
+        const item = cheapest;
+        const evs = [earn(9999, item.skill, 400), S.buyEvent(L, item)];
+        ok(!S.canBuy(evs, item, { ledger: L }).ok, "the same item was sold twice");
+      });
+
+      t("shop: a purchase event validates against the frozen schema", function () {
+        const ids = L.currencyIdSet(currencies);
+        shop.items.forEach((i) => {
+          eq(L.validate(S.buyEvent(L, i), ids).length, 0,
+             `purchase of ${i.id} produced an invalid event`);
+        });
+      });
+
+      t("shop: every item names a registered currency, a real skill and a real slot", function () {
+        const ids = L.currencyIdSet(currencies);
+        const skills = new Set(currencies.currencies
+          .filter((c) => c.class === "skill").map((c) => c.id.split(":")[1]));
+        const slots = new Set(shop.rooms[0].slots.map((s) => s.id));
+        const seenId = new Set(), seenSlot = new Set();
+        shop.items.forEach((i) => {
+          ok(!seenId.has(i.id), `duplicate item id: ${i.id}`);
+          seenId.add(i.id);
+          ok(skills.has(i.skill), `item ${i.id} has unknown skill ${i.skill}`);
+          ok(slots.has(i.slot), `item ${i.id} sits in unknown slot ${i.slot}`);
+          ok(!seenSlot.has(i.slot), `two items share slot ${i.slot}`);
+          seenSlot.add(i.slot);
+          Object.keys(i.cost).forEach((c) =>
+            ok(ids.has(c), `item ${i.id} is priced in unregistered currency ${c}`));
+        });
+      });
+
+      t("shop: nothing is priced in XP, and nothing is priced in Favor", function () {
+        /* core:xp is not spendable at all (§1) and Favor may never be reachable
+         * from a self-care economy (ADR-009). A price list is exactly where the
+         * two would leak into each other. */
+        shop.items.forEach((i) => {
+          ok(!("core:xp" in i.cost), `${i.id} is priced in XP, which is not spendable`);
+          ok(!("core:favor" in i.cost), `${i.id} is priced in Favor — Embers must never reach it`);
+        });
+      });
+
+      t("shop: the cheapest item still costs about a good week, not a good day", function () {
+        /* ECONOMY §3's pricing rule, mechanised. An upgrade you can afford the
+         * day you unlock it teaches the player the currency is meaningless, and
+         * that erosion happens one reasonable-looking discount at a time. */
+        const price = cheapest.cost["core:embers"];
+        ok(price >= 700, `the cheapest item is ${price} Embers — under a good week (~700+)`);
+        ok(price <= 1600, `the cheapest item is ${price} Embers — beyond a good week`);
+      });
+
+      t("shop: every skill has something to buy, reachable by an isolated player", function () {
+        /* ADR-020 applied to the shop. A tree you can fill but never spend from
+         * is a locked tree with extra steps. */
+        const bySkill = {};
+        shop.items.forEach((i) => { (bySkill[i.skill] = bySkill[i.skill] || []).push(i); });
+        ["body", "home", "kitchen", "craft", "community"].forEach((s) => {
+          ok((bySkill[s] || []).length > 0, `skill ${s} has nothing to buy`);
+        });
+      });
+    }
+
     return results;
   }
 
-  function run(L, catalog, currencies, C) {
-    const results = makeSuite(L, catalog, currencies, C);
+  function run(L, catalog, currencies, C, S, shop) {
+    const results = makeSuite(L, catalog, currencies, C, S, shop);
     return {
       results: results,
       passed: results.filter((r) => r.ok).length,
@@ -379,9 +534,11 @@ if (typeof module === "object" && require.main === module) {
   const here = __dirname;
   const L = require(path.join(here, "ledger.js"));
   const C = require(path.join(here, "character.js"));
+  const S = require(path.join(here, "shop.js"));
   const catalog = JSON.parse(fs.readFileSync(path.join(here, "catalog.json"), "utf8"));
   const currencies = JSON.parse(fs.readFileSync(path.join(here, "currencies.json"), "utf8"));
-  const out = module.exports.run(L, catalog, currencies, C);
+  const shop = JSON.parse(fs.readFileSync(path.join(here, "shop.json"), "utf8"));
+  const out = module.exports.run(L, catalog, currencies, C, S, shop);
   out.results.forEach((r) =>
     console.log((r.ok ? "  PASS  " : "  FAIL  ") + r.name + (r.ok ? "" : "\n          " + r.msg)));
   console.log(`\n${out.passed} passed, ${out.failed} failed`);

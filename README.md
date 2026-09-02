@@ -336,3 +336,55 @@ reads, and an undocumented park becomes an abandonment.*
 >    one `localStorage`. Both namespace their keys and **neither calls `localStorage.clear()`
 >    today** — checked, not assumed — but the day either one does, it silently wipes the
 >    other's data. Worth knowing before a third PWA lands on the same origin.
+>
+> **2026-09-01 (slice 1.2 — DONE) — the shop, and the first room.** The tier's actual
+> hypothesis, shipped: **you can spend Embers on something, see it appear in a room, and it
+> is still there after a refresh.** Verified by doing it in a browser, not by reasoning
+> about it. `hearthsmith@0.5.0`.
+>
+> - **`shop.json`** — 12 items across all five trees, each gated by a skill level and
+>   priced in Embers. Cheapest is **900**, about one good week per ECONOMY §3; a test
+>   enforces the floor, because a pricing rule erodes one reasonable discount at a time.
+> - **`shop.js`** — the projection layer. **There is no inventory.** What you own is the set
+>   of `spend` events carrying an `item`, derived on read, exactly like every balance. An
+>   export therefore already carries the whole room, a two-device merge is still a union by
+>   id, and a 2031 tool that never heard of this shop can still show what you built.
+> - **`room.html`** — twelve slots, hand-authored inline SVG sprites, empty slots drawn
+>   faintly so the room says *there is room for more* rather than *you have nothing*.
+>   **No art licence question at all** — Kenney (CC0) is still the answer when real art is
+>   wanted, and the LimeZu pack is still non-commercial and still unusable.
+> - **Buying takes two taps.** Nothing built is ever taken back (§4 rule 2), which is a
+>   kindness everywhere except a mis-tap that spends three weeks of Embers — and retraction
+>   cannot help there, since it corrects what you *did*, not what you *chose to buy*. The
+>   confirm disarms itself after 4.5s so it never sits waiting to be brushed.
+>
+> **THE SCHEMA WAS FOUND WRONG — ADR-029, and ADR-017's gate clause is now closed.**
+> `newEvent()` attached `verb` and `skill` unconditionally. `JSON.stringify` drops undefined,
+> so a `spend` carried them in memory and lost them on save: the same event answered
+> `"verb" in ev` two different ways depending on whether it had been through storage. The
+> byte-stability test passed the whole time — the bytes really were stable — because it had
+> only ever run on `earn` events, where the two shapes coincide. **ROADMAP predicted both
+> that this would happen and where**: the shop, the first code that reads the ledger rather
+> than appending to it. Fixed, documented in ECONOMY §2, pinned by a test.
+>
+> **Three smaller things found while verifying, all fixed:**
+> 1. **"Today" counted purchases.** It is presented beside Embers and XP as a count of what
+>    you did; the first buy would have quietly incremented it. Now counts `earn` only.
+> 2. **The harm-rule doctor check named its pages by hand.** Adding `room.html` shipped a
+>    page of new player-facing copy that no harm rule applied to, while the check went on
+>    reporting ok about two files. It now reads the page list out of `sw.js`'s `SHELL`, the
+>    same trick check 9 uses — *watched fail*: guilt copy added to `room.html` turns it
+>    UNHEALTHY, removing it returns HEALTHY.
+> 3. **`button.ghost` never matched the toolbar links.** The *character* link had been
+>    rendering as default-blue underlined browser text at no minimum tap size since
+>    `profile.html` shipped. Selector is now `.ghost`.
+>
+> **44 tests, doctor HEALTHY at 11 checks.** Eight deliberate sabotages of the new shop
+> rules were each confirmed to fail the suite before being restored — a check nobody has
+> watched fail is not a check.
+>
+> **Could not verify: the service worker.** Registration fails in the in-app browser used
+> for testing (`An unknown error occurred when fetching the script`) — the file serves 200
+> with `text/javascript`, so this is the test browser, not the code. `CACHE`, `SHELL` and
+> `SHELL_HASH` are correct per the doctor, but **the offline behaviour of `room.html` and
+> `shop.json` has not been observed on a real device.** First thing to check on the phone.

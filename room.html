@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#151013">
+<title>The main room — Hearthsmith</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  /* Same palette as index.html, deliberately duplicated rather than extracted.
+     Extracting it would add a stylesheet to the shell, and a shell file is a
+     thing that has to be cache-busted forever. Two copies of eleven custom
+     properties is the cheaper of the two debts at this size. */
+  :root{
+    --bg:#151013; --panel:#1e1719; --panel-2:#261d20; --line:#3a2c2f;
+    --ink:#f3e9e2; --dim:#a8968f; --faint:#7b6b67;
+    --ember:#ff9d4d; --ember-soft:#5a3620; --glow:#ffce8a;
+    --body:#8fbf7f; --home:#7fa8d8; --kitchen:#e2a06a; --craft:#b79bd8; --community:#e08fa8;
+    --wood:#7a5238; --wood-2:#5d3d29; --cloth:#8d6a52; --metal:#6d6a6b; --leaf:#6f9a5e;
+    --r:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#faf5f0; --panel:#fff; --panel-2:#f3ebe4; --line:#e4d7cc;
+      --ink:#2a2124; --dim:#6f5f5a; --faint:#948079; --ember-soft:#ffe6cc;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.5 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:max(14px,env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));
+    max-width:640px; margin:0 auto;
+  }
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  h1{font-size:1.35rem;margin:0;letter-spacing:.2px}
+  .sub{color:var(--dim);font-size:.85rem;margin-top:2px}
+  a.back{color:var(--dim);text-decoration:none;font-size:.8rem;border:1px solid var(--line);
+         border-radius:10px;padding:9px 13px;min-height:40px;display:inline-flex;align-items:center}
+
+  /* ---- the room ---- */
+  .room{
+    border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+    background:var(--panel);margin-bottom:14px;
+  }
+  .room svg{display:block;width:100%;height:auto}
+  .slot-empty{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 5;opacity:.75}
+  .roomline{color:var(--dim);font-size:.8rem;text-align:center;padding:0 12px 12px}
+
+  .bal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+  .stat b{display:block;font-size:1.28rem;line-height:1.15;font-variant-numeric:tabular-nums}
+  .stat span{color:var(--dim);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+  .stat.embers b{color:var(--ember)}
+
+  h2{font-size:.76rem;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);
+     margin:22px 0 9px;font-weight:600}
+
+  .items{display:grid;gap:8px}
+  .row{
+    display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:11px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;
+  }
+  .row .thumb{width:44px;height:44px;border-radius:9px;background:var(--panel-2);display:block}
+  .row .name{font-size:.9rem;line-height:1.3}
+  .row .blurb{color:var(--faint);font-size:.76rem;line-height:1.35;margin-top:2px}
+  .row .why{color:var(--dim);font-size:.74rem;margin-top:3px}
+  .row.locked .thumb{opacity:.32}
+  .row.locked .name{color:var(--dim)}
+  .row.owned{background:var(--ember-soft);border-color:var(--ember)}
+
+  button.buy{
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    appearance:none;cursor:pointer;font:inherit;font-size:.82rem;font-variant-numeric:tabular-nums;
+    background:var(--panel-2);color:var(--ink);border:1px solid var(--line);
+    border-radius:99px;padding:10px 14px;min-height:44px;white-space:nowrap;
+    transition:transform .08s ease,background .2s ease,border-color .2s ease;
+  }
+  button.buy:active{transform:scale(.96)}
+  button.buy.ready{border-color:var(--ember);color:var(--ember)}
+  button.buy.confirm{background:var(--ember);border-color:var(--ember);color:#2a1608;font-weight:700}
+  button.buy[disabled]{opacity:.5;cursor:default}
+  .have{color:var(--faint);font-size:.74rem;text-align:right;margin-top:3px;font-variant-numeric:tabular-nums}
+
+  footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--faint);font-size:.74rem;line-height:1.7}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em}
+  .warn{background:var(--ember-soft);border:1px solid var(--ember);border-radius:var(--r);
+        padding:13px 15px;margin-bottom:14px;font-size:.85rem;color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="boot" class="warn" hidden></div>
+
+<header>
+  <div>
+    <h1>The main room</h1>
+    <div class="sub" id="roomsub">&nbsp;</div>
+  </div>
+  <a class="back" href="index.html">back</a>
+</header>
+
+<div class="room">
+  <svg id="roomsvg" viewBox="0 0 400 260" role="img" aria-labelledby="roomdesc">
+    <title id="roomdesc">Your room</title>
+
+    <!-- The sprites. Hand-authored, flat, and deliberately few shapes each: they
+         have to read at 44 pixels in a list and at full width in the room, and
+         they must not need an artist to extend. Kenney (CC0) is the decided
+         answer when real art arrives (NEXT.md slice 1.2); until then this keeps
+         the licence question entirely out of the repo. -->
+    <defs>
+      <symbol id="sp-bed" viewBox="0 0 100 100">
+        <rect x="6" y="42" width="88" height="34" rx="5" fill="var(--wood)"/>
+        <rect x="6" y="30" width="16" height="46" rx="4" fill="var(--wood-2)"/>
+        <rect x="80" y="38" width="14" height="38" rx="4" fill="var(--wood-2)"/>
+        <rect x="22" y="44" width="60" height="20" rx="4" fill="var(--cloth)"/>
+        <rect x="26" y="38" width="24" height="14" rx="5" fill="#e8ddd2"/>
+        <rect x="12" y="76" width="8" height="12" rx="2" fill="var(--wood-2)"/>
+        <rect x="80" y="76" width="8" height="12" rx="2" fill="var(--wood-2)"/>
+      </symbol>
+      <symbol id="sp-stove" viewBox="0 0 100 100">
+        <rect x="16" y="30" width="68" height="58" rx="6" fill="var(--metal)"/>
+        <rect x="22" y="52" width="56" height="30" rx="4" fill="#2b2628"/>
+        <rect x="27" y="57" width="46" height="20" rx="3" fill="var(--ember)" opacity=".55"/>
+        <circle cx="34" cy="40" r="6" fill="#2b2628"/>
+        <circle cx="52" cy="40" r="6" fill="#2b2628"/>
+        <circle cx="70" cy="40" r="4" fill="var(--ember)"/>
+        <rect x="16" y="24" width="68" height="7" rx="3" fill="#83807f"/>
+      </symbol>
+      <symbol id="sp-desk" viewBox="0 0 100 100">
+        <rect x="10" y="44" width="80" height="9" rx="3" fill="var(--wood)"/>
+        <rect x="14" y="53" width="10" height="34" rx="2" fill="var(--wood-2)"/>
+        <rect x="76" y="53" width="10" height="34" rx="2" fill="var(--wood-2)"/>
+        <rect x="30" y="53" width="42" height="20" rx="3" fill="var(--wood-2)"/>
+        <circle cx="51" cy="63" r="2.6" fill="var(--glow)"/>
+        <rect x="24" y="30" width="20" height="14" rx="2" fill="#e8ddd2"/>
+        <rect x="58" y="34" width="14" height="10" rx="2" fill="var(--craft)"/>
+      </symbol>
+      <symbol id="sp-table" viewBox="0 0 100 100">
+        <ellipse cx="50" cy="46" rx="38" ry="11" fill="var(--wood)"/>
+        <rect x="46" y="52" width="8" height="30" fill="var(--wood-2)"/>
+        <rect x="30" y="80" width="40" height="7" rx="3" fill="var(--wood-2)"/>
+        <circle cx="38" cy="44" r="6" fill="#e8ddd2"/>
+        <circle cx="62" cy="44" r="6" fill="#e8ddd2"/>
+      </symbol>
+      <symbol id="sp-chair" viewBox="0 0 100 100">
+        <rect x="30" y="24" width="40" height="34" rx="6" fill="var(--cloth)"/>
+        <rect x="26" y="54" width="48" height="12" rx="4" fill="var(--wood)"/>
+        <rect x="28" y="66" width="7" height="20" rx="2" fill="var(--wood-2)"/>
+        <rect x="65" y="66" width="7" height="20" rx="2" fill="var(--wood-2)"/>
+      </symbol>
+      <symbol id="sp-shelf" viewBox="0 0 100 100">
+        <rect x="12" y="24" width="76" height="7" rx="2" fill="var(--wood)"/>
+        <rect x="12" y="52" width="76" height="7" rx="2" fill="var(--wood)"/>
+        <rect x="12" y="80" width="76" height="7" rx="2" fill="var(--wood)"/>
+        <rect x="20" y="8" width="7" height="16" fill="var(--craft)"/>
+        <rect x="29" y="6" width="7" height="18" fill="var(--community)"/>
+        <rect x="38" y="10" width="7" height="14" fill="var(--kitchen)"/>
+        <rect x="22" y="38" width="20" height="14" rx="2" fill="var(--home)"/>
+        <circle cx="66" cy="45" r="7" fill="var(--leaf)"/>
+        <rect x="24" y="70" width="26" height="10" rx="2" fill="var(--cloth)"/>
+      </symbol>
+      <symbol id="sp-window" viewBox="0 0 100 100">
+        <rect x="16" y="14" width="68" height="66" rx="5" fill="var(--wood-2)"/>
+        <rect x="22" y="20" width="56" height="54" rx="3" fill="var(--glow)" opacity=".55"/>
+        <rect x="48" y="20" width="4" height="54" fill="var(--wood-2)"/>
+        <rect x="22" y="45" width="56" height="4" fill="var(--wood-2)"/>
+        <rect x="12" y="80" width="76" height="7" rx="2" fill="var(--wood)"/>
+      </symbol>
+      <symbol id="sp-curtains" viewBox="0 0 100 100">
+        <rect x="10" y="12" width="80" height="6" rx="3" fill="var(--wood-2)"/>
+        <path d="M14 18 q10 30 0 66 h18 q-8 -34 0 -66 z" fill="var(--cloth)"/>
+        <path d="M86 18 q-10 30 0 66 h-18 q8 -34 0 -66 z" fill="var(--cloth)"/>
+        <rect x="36" y="18" width="28" height="66" fill="var(--panel-2)" opacity=".7"/>
+      </symbol>
+      <symbol id="sp-door" viewBox="0 0 100 100">
+        <rect x="24" y="10" width="52" height="80" rx="4" fill="var(--wood)"/>
+        <rect x="31" y="18" width="38" height="30" rx="3" fill="var(--wood-2)"/>
+        <rect x="31" y="54" width="38" height="28" rx="3" fill="var(--wood-2)"/>
+        <circle cx="66" cy="52" r="3.6" fill="var(--glow)"/>
+      </symbol>
+      <symbol id="sp-rug" viewBox="0 0 100 100">
+        <ellipse cx="50" cy="56" rx="44" ry="20" fill="var(--cloth)"/>
+        <ellipse cx="50" cy="56" rx="32" ry="13" fill="none" stroke="var(--ember)" stroke-width="3" opacity=".65"/>
+        <ellipse cx="50" cy="56" rx="18" ry="7" fill="var(--ember)" opacity=".35"/>
+      </symbol>
+      <symbol id="sp-tools" viewBox="0 0 100 100">
+        <rect x="12" y="22" width="76" height="8" rx="3" fill="var(--wood-2)"/>
+        <rect x="22" y="30" width="6" height="34" rx="2" fill="var(--metal)"/>
+        <rect x="17" y="60" width="16" height="8" rx="2" fill="var(--wood)"/>
+        <rect x="44" y="30" width="6" height="26" rx="2" fill="var(--wood)"/>
+        <path d="M38 30 h18 l-3 -10 h-12 z" fill="var(--metal)"/>
+        <rect x="68" y="30" width="6" height="30" rx="2" fill="var(--wood)"/>
+        <circle cx="71" cy="66" r="8" fill="var(--metal)"/>
+      </symbol>
+      <symbol id="sp-pantry" viewBox="0 0 100 100">
+        <rect x="18" y="14" width="64" height="74" rx="5" fill="var(--wood)"/>
+        <rect x="24" y="20" width="52" height="20" rx="3" fill="var(--wood-2)"/>
+        <rect x="24" y="46" width="52" height="20" rx="3" fill="var(--wood-2)"/>
+        <circle cx="34" cy="30" r="5" fill="var(--kitchen)"/>
+        <circle cx="48" cy="30" r="5" fill="var(--leaf)"/>
+        <circle cx="62" cy="30" r="5" fill="var(--community)"/>
+        <rect x="30" y="52" width="10" height="10" rx="2" fill="var(--glow)"/>
+        <rect x="46" y="52" width="10" height="10" rx="2" fill="var(--ember)"/>
+        <rect x="24" y="72" width="52" height="10" rx="3" fill="var(--wood-2)"/>
+      </symbol>
+    </defs>
+
+    <!-- wall, floor, and a hearth that is always there: the room is never empty,
+         because an empty room on day one reads as a punishment for being new. -->
+    <rect x="0" y="0" width="400" height="96" fill="var(--panel-2)"/>
+    <rect x="0" y="96" width="400" height="164" fill="var(--panel)"/>
+    <rect x="0" y="94" width="400" height="3" fill="var(--line)"/>
+    <g id="hearthglow" opacity="0.5">
+      <ellipse cx="200" cy="120" rx="150" ry="46" fill="var(--ember)" opacity=".10"/>
+    </g>
+    <g id="slots"></g>
+    <g id="things"></g>
+  </svg>
+  <div class="roomline" id="roomline">&nbsp;</div>
+</div>
+
+<div class="bal">
+  <div class="stat embers"><b id="embers">0</b><span>Embers to spend</span></div>
+  <div class="stat"><b id="ownedn">0</b><span>Built so far</span></div>
+</div>
+
+<div id="shop"></div>
+
+<footer id="foot"></footer>
+
+<script src="ledger.js"></script>
+<script src="character.js"></script>
+<script src="shop.js"></script>
+<script>
+(function () {
+  "use strict";
+  var L = window.Ledger, C = window.Character, S = window.Shop;
+  var SHOP = null, CUR = null, IDS = null;
+  var arming = null, armTimer = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  var SKILL_LABEL = { body:"Body", home:"Home", kitchen:"Kitchen", craft:"Craft", community:"Community" };
+  var ORDER = ["home", "body", "kitchen", "craft", "community"];
+
+  Promise.all([
+    fetch("shop.json").then(function (r) { return r.json(); }),
+    fetch("currencies.json").then(function (r) { return r.json(); })
+  ]).then(function (both) {
+    SHOP = both[0]; CUR = both[1]; IDS = L.currencyIdSet(CUR);
+    render();
+  }).catch(function () {
+    var b = $("boot"); b.hidden = false;
+    b.innerHTML = "<b>Serve this folder over http to run it.</b><br>" +
+      "Opening <code>room.html</code> off the file system blocks loading " +
+      "<code>shop.json</code>. Run <code>python -m http.server 8080</code> here.";
+  });
+
+  /* ---- buying ----------------------------------------------------------
+   * TWO TAPS, ALWAYS. Nothing built is ever taken back (§4 rule 2), which is a
+   * kindness in every case except one: a mis-tap that spends three weeks of
+   * Embers cannot be undone by the retraction mechanism either, because
+   * retraction corrects *what you did*, not what you chose to buy. So the
+   * confirmation is the only guard this action gets, and it is not optional.
+   * It disarms itself after a few seconds so it never sits waiting to be
+   * brushed. */
+  function arm(item, btn) {
+    if (arming === item.id) { commit(item); return; }
+    disarm();
+    arming = item.id;
+    btn.classList.add("confirm");
+    btn.textContent = "buy for " + item.cost["core:embers"].toLocaleString() + "?";
+    armTimer = setTimeout(function () { disarm(); render(); }, 4500);
+  }
+  function disarm() {
+    arming = null;
+    if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+  }
+  function commit(item) {
+    disarm();
+    var events = L.read();
+    var verdict = S.canBuy(events, item, { ledger: L, character: C });
+    if (!verdict.ok) { render(); return; }   // re-checked against the ledger, not the UI
+    var ev = S.buyEvent(L, item);
+    var errs = L.validate(ev, IDS);
+    if (errs.length) { alert("Not bought — " + errs.join("; ")); return; }
+    L.appendAndSave(ev, IDS);
+    render();
+  }
+
+  /* ---- the room drawing ------------------------------------------------- */
+  function drawRoom(events) {
+    var room = SHOP.rooms[0];
+    var svg = $("roomsvg");
+    svg.setAttribute("viewBox", room.view.join(" "));
+
+    var slots = $("slots"); slots.innerHTML = "";
+    var things = $("things"); things.innerHTML = "";
+    var here = S.placed(events, SHOP);
+    var filled = {};
+    here.forEach(function (p) { filled[p.slot.id] = true; });
+
+    /* Empty slots are drawn, faintly. The room says "there is room for more"
+       rather than "you have nothing" — same reason a locked item stays visible
+       in the shop below. */
+    room.slots.forEach(function (s) {
+      if (filled[s.id]) return;
+      var r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("x", s.x + 6); r.setAttribute("y", s.y + 6);
+      r.setAttribute("width", s.w - 12); r.setAttribute("height", s.h - 12);
+      r.setAttribute("rx", 8); r.setAttribute("class", "slot-empty");
+      slots.appendChild(r);
+    });
+
+    here.forEach(function (p) {
+      var u = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      u.setAttribute("href", "#sp-" + p.item.sprite);
+      u.setAttribute("x", p.slot.x); u.setAttribute("y", p.slot.y);
+      u.setAttribute("width", p.slot.w); u.setAttribute("height", p.slot.h);
+      var title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = p.item.label;
+      u.appendChild(title);
+      things.appendChild(u);
+    });
+
+    $("roomline").textContent = here.length === 0
+      ? "Empty, for now. Everything here is bought with Embers you already earned."
+      : here.length === 1
+        ? "One thing you built."
+        : here.length + " things you built.";
+  }
+
+  /* ---- render ----------------------------------------------------------- */
+  function render() {
+    var events = L.read();
+    var rows = S.view(events, SHOP, { ledger: L, character: C });
+    var bal = L.balances(events);
+    var have = Math.round(bal["core:embers"] || 0);
+
+    $("embers").textContent = have.toLocaleString();
+    $("ownedn").textContent = rows.filter(function (r) { return r.owned; }).length;
+    $("roomsub").textContent = "yours, and nothing in it can ever be taken back";
+
+    drawRoom(events);
+
+    var wrap = $("shop"); wrap.innerHTML = "";
+    ORDER.forEach(function (skill) {
+      var mine = rows.filter(function (r) { return r.item.skill === skill; });
+      if (!mine.length) return;
+      var h = document.createElement("h2");
+      h.textContent = SKILL_LABEL[skill] + " · level " + mine[0].level;
+      wrap.appendChild(h);
+      var list = document.createElement("div"); list.className = "items";
+      mine.forEach(function (r) { list.appendChild(rowFor(r)); });
+      wrap.appendChild(list);
+    });
+
+    var unknown = L.countUnknownKinds(events);
+    $("foot").innerHTML =
+      "What you own is worked out from your own spend events — there is no separate " +
+      "list of your things anywhere, so an export carries the whole room with it." +
+      (unknown ? "<br>" + unknown + " event(s) were written by a newer version and are kept untouched." : "") +
+      "<br>Schema v" + L.SCHEMA_VERSION + " &middot; " + L.SOURCE;
+  }
+
+  function rowFor(r) {
+    var el = document.createElement("div");
+    el.className = "row" + (r.owned ? " owned" : r.unlocked ? "" : " locked");
+
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "thumb");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    var u = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    u.setAttribute("href", "#sp-" + r.item.sprite);
+    svg.appendChild(u);
+    el.appendChild(svg);
+
+    var mid = document.createElement("div");
+    var why = r.owned ? "yours"
+      : !r.unlocked ? SKILL_LABEL[r.item.skill] + " level " + r.item.unlock_level + " unlocks it"
+      : !r.affordable ? r.shortBy.toLocaleString() + " more Embers"
+      : "";
+    mid.innerHTML = '<div class="name">' + esc(r.item.label) + '</div>' +
+                    '<div class="blurb">' + esc(r.item.blurb || "") + '</div>' +
+                    (why ? '<div class="why">' + esc(why) + '</div>' : '');
+    el.appendChild(mid);
+
+    var right = document.createElement("div");
+    var b = document.createElement("button");
+    b.className = "buy" + (r.can.ok ? " ready" : "");
+    b.type = "button";
+    if (r.owned) { b.textContent = "built"; b.disabled = true; }
+    else {
+      b.textContent = r.item.cost["core:embers"].toLocaleString() + " ◆";
+      b.disabled = !r.can.ok;
+      if (r.can.ok) b.addEventListener("click", function () { arm(r.item, b); });
+    }
+    right.appendChild(b);
+    el.appendChild(right);
+    return el;
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c];
+    });
+  }
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>

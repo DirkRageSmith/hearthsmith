@@ -80,12 +80,18 @@
   button.act.done{background:var(--ember-soft);border-color:var(--ember)}
 
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 8px}
-  button.ghost{
+  /* `.ghost`, not `button.ghost`. Two of the four controls in this toolbar are
+     links, and while the selector was element-scoped they matched nothing at
+     all: the character link had been rendering as default-blue underlined
+     browser text, at no minimum tap size, since profile.html shipped. It looked
+     deliberate enough that nobody questioned it. */
+  .ghost{
     appearance:none;cursor:pointer;font:inherit;font-size:.8rem;min-height:40px;
+    display:inline-flex;align-items:center;text-decoration:none;
     background:transparent;color:var(--dim);border:1px solid var(--line);
     border-radius:10px;padding:9px 13px;
   }
-  button.ghost[aria-pressed="true"]{color:var(--ember);border-color:var(--ember)}
+  .ghost[aria-pressed="true"]{color:var(--ember);border-color:var(--ember)}
 
   .log{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:5px}
   .log li{display:flex;justify-content:space-between;gap:10px;font-size:.85rem;
@@ -134,7 +140,8 @@
 
 <div class="toolbar">
   <button class="ghost" id="btn-day" aria-pressed="false" title="Logging for yesterday is allowed — forgetting to open an app is not a moral failure">for yesterday</button>
-  <a class="ghost" href="profile.html" style="text-decoration:none;display:inline-flex;align-items:center">character</a>
+  <a class="ghost" href="room.html">your room</a>
+  <a class="ghost" href="profile.html">character</a>
   <button class="ghost" id="btn-export">export my data</button>
 </div>
 
@@ -154,14 +161,21 @@
   var SKILL_COLOR = { body:"var(--body)", home:"var(--home)", kitchen:"var(--kitchen)",
                       craft:"var(--craft)", community:"var(--community)" };
   var SKILL_LABEL = { body:"Body", home:"Home", kitchen:"Kitchen", craft:"Craft", community:"Community" };
+  var SHOP_LABEL = {};   // item id -> label, only so the log can name a purchase
 
   function boot(msg) { var b = $("boot"); b.hidden = false; b.innerHTML = msg; }
 
   Promise.all([
     fetch("catalog.json").then(function (r) { return r.json(); }),
-    fetch("currencies.json").then(function (r) { return r.json(); })
-  ]).then(function (both) {
-    CAT = both[0]; CUR = both[1]; IDS = L.currencyIdSet(CUR);
+    fetch("currencies.json").then(function (r) { return r.json(); }),
+    /* The shop catalogue is read here for labels ONLY. This page never decides
+       what you own — room.html does that, from the ledger. Two pages computing
+       ownership two ways is the second source of truth shop.js exists to
+       refuse. */
+    fetch("shop.json").then(function (r) { return r.json(); })
+  ]).then(function (all) {
+    CAT = all[0]; CUR = all[1]; IDS = L.currencyIdSet(CUR);
+    (all[2].items || []).forEach(function (i) { SHOP_LABEL[i.id] = i.label; });
     render();
   }).catch(function () {
     /* Opened straight off the disk. Say what to do rather than showing a blank
@@ -222,10 +236,16 @@
     var totals = L.balances(events);
     var todayKey = L.localDayKey(L.nowIso());
     var todays = L.eventsOn(events, todayKey);
+    /* "Today" counts things you DID, so it counts earn events only. Until the
+       shop existed every event was an earn and the distinction was invisible;
+       the first purchase would have quietly incremented it, and a number
+       labelled Today that goes up when you buy a rug is telling you something
+       untrue about your day. */
+    var didToday = todays.filter(function (e) { return e.kind === "earn"; });
 
     $("embers").textContent = Math.round(totals["core:embers"] || 0).toLocaleString();
     $("xp").textContent = Math.round(totals["core:xp"] || 0).toLocaleString();
-    $("today").textContent = todays.length;
+    $("today").textContent = didToday.length;
 
     /* "12 days this month", never a streak with a reset. A broken streak is a
        punishment for having a life (ADR-006). */
@@ -258,7 +278,7 @@
     // catalogue, grouped by skill
     var wrap = $("catalog"); wrap.innerHTML = "";
     var doneToday = {};
-    todays.forEach(function (e) { doneToday[e.verb] = (doneToday[e.verb] || 0) + 1; });
+    didToday.forEach(function (e) { doneToday[e.verb] = (doneToday[e.verb] || 0) + 1; });
     ["body","home","kitchen","craft","community"].forEach(function (s) {
       var acts = CAT.actions.filter(function (a) { return a.skill === s && !a.retired; });
       if (!acts.length) return;
@@ -284,9 +304,17 @@
                      'including getting out of bed.</li>';
     }
     var byVerb = {}; CAT.actions.forEach(function (a) { byVerb[a.verb] = a.label; });
+    /* A purchase is a real thing that happened and belongs in the log, but it is
+       not an action you did — so it is named for what it built. It falls back to
+       the raw item id rather than hiding: an item bought by a future build this
+       one has never heard of still shows up. */
+    var label = function (e) {
+      if (e.kind === "spend") return "Built &middot; " + (SHOP_LABEL[e.item] || e.item || "something");
+      return byVerb[e.verb] || e.verb || e.kind;
+    };
     recent.forEach(function (e) {
       var li = document.createElement("li");
-      li.innerHTML = '<span>' + (byVerb[e.verb] || e.verb || e.kind) + '</span>' +
+      li.innerHTML = '<span>' + label(e) + '</span>' +
                      '<time>' + String(e.ts).slice(11,16) +
                      (L.localDayKey(e.ts) === todayKey ? '' : ' &middot; ' + String(e.ts).slice(5,10)) +
                      '</time>';

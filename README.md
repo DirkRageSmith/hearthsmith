@@ -253,6 +253,35 @@ reads, and an undocumented park becomes an abandonment.*
 >
 > **Next: slice 1.1 — the shop.** Tier 1 is open and Embers finally buy something.
 >
+> **2026-09-01 (slice 1.1 — DONE, and it is not the shop)** — The shop moved to 1.2 because
+> a live bug made it unshippable. Matt asked for *"a real way to update the app regularly"*
+> and the service worker turned out to be **cache-first-forever**: `hit || fetch(...)`
+> short-circuits, so a cached file never hit the network and the refresh branch never ran.
+> The comment above it claimed stale-while-revalidate. **Every update since the worker
+> shipped had been silently swallowed**, and reinstalling looked like the only lever — which
+> is where an entire thread of wipe-anxiety came from, including a claim ADR-026 had to
+> retract. **`hearthsmith@0.4.0`** (ADR-028):
+> - **Real stale-while-revalidate.** The fetch starts unconditionally; the cache still
+>   answers instantly and the refetch updates it for next launch. Offline-first untouched.
+> - **`SHELL_HASH` in `sw.js` + a doctor check that FAILS on mismatch**, reading the file
+>   list out of `sw.js` so the two cannot disagree about what the shell is. Check 8 only ever
+>   caught "bumped `ledger.js`, forgot `sw.js`"; it could not see a change to `index.html`
+>   with neither bumped, which ships nothing and reported HEALTHY.
+> - **`NEXT.md` had claimed "the doctor warns if you forget" since Tier 1 opened. It did
+>   not.** Now it does. **11 checks**, verified by mutation test rather than by reading it.
+>
+> **Third time a mechanised rule has caught something real — and the second time the shape
+> was a correct-sounding description sitting on code that did something else** (ADR-020 was
+> a test checking a label instead of a property). That pattern is worth naming: on this
+> machine, the comment is not evidence.
+>
+> Also this session, all design and no code: **ADR-024/025** froze the stat layer
+> (4 derived points per level + a flat +1 to all six every fifth level, no randomness),
+> **ADR-026** the character-sheet hub as a lens rather than a layer, **ADR-027** hold-to-
+> retract (today's log only, append-only, `kind: "retract"`).
+>
+> **Next: slice 1.2 — the shop.** Unchanged in substance; renumbered.
+>
 > **2026-08-29 (slice 0.6 — PUBLISHED, not yet closed)** — Four days passed between "the
 > app is built and green" and anybody being able to open it, which is the failure this
 > slice exists to break, arriving on schedule. Repo `DirkRageSmith/hearthsmith` created

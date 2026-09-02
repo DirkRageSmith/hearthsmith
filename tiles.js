@@ -134,52 +134,57 @@
       "xxxxxxxxxxxxxxxx",
       "aaaaaaaaaaaaaaaa"
     ],
-    /* Floor: ONE BOARD PER TILE, and as few seams as will still read.
+    /* Floor: PARQUET, SEEN FROM ABOVE. Third attempt, and the first that
+     * actually reads as a floor.
      *
-     * Two drafts got this wrong in opposite directions. The first packed three
-     * planks into every sixteen pixels, so the seams were denser than anything
-     * standing on them and the floor read as BRICKWORK. The second gave every
-     * tile its own vertical end-joint, which put a join every sixteen pixels in
-     * both directions and turned it into a grid of PANELS.
+     * The two earlier tries were both horizontal boards running across the
+     * screen — first packed three to a tile (which read as brickwork), then
+     * one board per tile (better, still wrong). The problem was never seam
+     * density. It was that HORIZONTAL BOARDS ARE A SIDE VIEW: they describe a
+     * surface facing you, so the floor read as a second wall below the first
+     * and everything standing on it looked pasted on.
      *
-     * A board is a whole tile tall with one soft seam under it, and only the
-     * `b` variant carries an end-joint — so in the 2x2 pattern the joints land
-     * every thirty-two pixels, staggered, the way boards are actually laid. */
+     * EarthBound's interiors (ADR-030) put the camera above the floor and in
+     * front of the wall at once — oblique, not perspective. The floor is a
+     * plane you look DOWN at; the back wall is a band you look ACROSS at.
+     * Square tiles with the grain flipping 90° each tile are the cheapest
+     * thing that says "down at", because alternating grain is what the eye
+     * reads as a horizontal surface. */
     floor_a: [
-      "zzzzzzzzzzzzzzzz",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "yyyyyyyyyyyyyyyy",
-      "bbbbbbbbbbbbbbbb"
+      "bbbbbbbbbbbbbbbb",
+      "bzzzzzzzzzzzzzzz",
+      "byyyyyyyyyyyyyyy",
+      "byyyyyyyyyyyyyyy",
+      "bzzzzzzzzzzzzzzz",
+      "byyyyyyyyyyyyyyy",
+      "byyyyyyyyyyyyyyy",
+      "bzzzzzzzzzzzzzzz",
+      "byyyyyyyyyyyyyyy",
+      "byyyyyyyyyyyyyyy",
+      "bzzzzzzzzzzzzzzz",
+      "byyyyyyyyyyyyyyy",
+      "byyyyyyyyyyyyyyy",
+      "bzzzzzzzzzzzzzzz",
+      "byyyyyyyyyyyyyyy",
+      "byyyyyyyyyyyyyyy"
     ],
     floor_b: [
-      "zzzzzzzzbzzzzzzz",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "yyyyyyyybyyyyyyy",
-      "bbbbbbbbbbbbbbbb"
+      "bbbbbbbbbbbbbbbb",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy",
+      "bzyyzyyzyyzyyzyy"
     ]
   };
 

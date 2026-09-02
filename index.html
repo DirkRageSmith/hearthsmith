@@ -347,7 +347,14 @@
     var doneToday = {};
     didToday.forEach(function (e) { doneToday[e.verb] = (doneToday[e.verb] || 0) + 1; });
     ["body","home","kitchen","craft","community"].forEach(function (s) {
-      var acts = CAT.actions.filter(function (a) { return a.skill === s && !a.retired; });
+      /* `written_by` means another tool writes this action, so it gets no button
+         here — hand-logging a FitFlexr workout in Hearthsmith would be a second
+         source of truth for one event, and the honest one is the app that watched
+         it happen (ADR-022). It still counts everywhere else: it is in the
+         catalogue, it grants normally, and it shows in the log and on the sheet. */
+      var acts = CAT.actions.filter(function (a) {
+        return a.skill === s && !a.retired && !a.written_by;
+      });
       if (!acts.length) return;
       var h = document.createElement("h2"); h.textContent = SKILL_LABEL[s]; wrap.appendChild(h);
       var g = document.createElement("div"); g.className = "group";

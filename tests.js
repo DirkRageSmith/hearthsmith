@@ -216,6 +216,12 @@
       const bySkill = {};
       catalog.actions.forEach((a) => {
         if (a.retired) return;
+        /* `written_by` actions are written by another tool and have no button
+         * here, so they cannot make a tree reachable IN HEARTHSMITH. Counting
+         * one would let a tree pass this rule on the strength of an action
+         * that requires owning a second app — a stricter requirement than
+         * "money", not a looser one. */
+        if (a.written_by) return;
         (bySkill[a.skill] = bySkill[a.skill] || []).push(a);
       });
       Object.entries(bySkill).forEach(([skill, actions]) => {
@@ -225,6 +231,22 @@
            `that tree is locked for an isolated player`);
         ok(solo.some((a) => a.tier === "upkeep" || a.tier === "community"),
            `skill ${skill} is solo-reachable only through high-effort actions`);
+      });
+    });
+
+    t("an externally-written action is registered but never tappable", function () {
+      /* ADR-022. `complete_workout` is written by FitFlexr, which watched you
+       * tick each set off. Hand-logging the same workout in Hearthsmith would
+       * be a second source of truth for one event, and the honest one is the
+       * app that saw it happen. It must still be a full citizen of the
+       * catalogue otherwise — the log names it, the character counts it. */
+      const external = catalog.actions.filter((a) => a.written_by);
+      ok(external.length > 0, "no externally-written action in the catalogue");
+      external.forEach((a) => {
+        ok(catalog.tiers[a.tier], `${a.verb} has unknown tier ${a.tier}`);
+        ok(typeof a.label === "string" && a.label.length > 0,
+           `${a.verb} has no label, so the log would render a raw verb`);
+        ok(!a.needs, `${a.verb} declares needs; a tool-written action gates on the tool`);
       });
     });
 

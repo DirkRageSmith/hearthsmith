@@ -388,3 +388,62 @@ reads, and an undocumented park becomes an abandonment.*
 > with `text/javascript`, so this is the test browser, not the code. `CACHE`, `SHELL` and
 > `SHELL_HASH` are correct per the doctor, but **the offline behaviour of `room.html` and
 > `shop.json` has not been observed on a real device.** First thing to check on the phone.
+>
+> **2026-09-01 (slice 1.3 — DONE) — the room became a room.** `hearthsmith@0.6.0`.
+>
+> **This was not the planned slice.** 1.3 was going to be hold-to-retract (ADR-027).
+> Matt sent a screenshot of a pixel-art city builder mid-session and asked what it would
+> take to get somewhere near it, and the honest answer was that the ledger work was
+> already done and the *visuals* were the thing standing between him and something he
+> could react to. Retract and the stat layer are both still fully specified and both
+> moved down; neither expires.
+>
+> - **`tiles.js` — the art seam, and the reason this slice is cheap to redo.** Sprites
+>   are 16×16 grids of characters indexed into a palette; they emit as SVG rects with
+>   runs merged. Real pixel art, diffable in git, no binary, no download, and **no
+>   licence question**. Swapping to a bought tileset means replacing this one module
+>   with one that returns spritesheet slices under the same names — the renderer, the
+>   shop and the ledger do not change. Kenney (CC0) remains the decided first swap.
+> - **31 sprites**: hearth, stove, sink, counter, table, pantry, bed, nightstand,
+>   wardrobe, sofa, armchair, rug, plant, bookshelf, desk, workbench, toolrack, window,
+>   curtains, sconce, picture, shelf, clock, door, mirror, guest chair, mat, plus wall,
+>   wainscot and two floor boards.
+> - **`shop.json` v2** — a real 16×10 tile grid instead of twelve boxes. Rows 0–3 wall,
+>   4–9 floor. **26 items** (the 12 shipped ones keep their ids, labels, skills and
+>   prices untouched; 14 are new). Six floor cells are deliberately left empty and draw
+>   as faint outlines, so the room reads as *there is room for more*.
+> - **The hearth is a fixture** — never bought, never lost, always drawn. An empty room
+>   on day one reads as a punishment for being new.
+> - **The room does not follow the UI theme.** A room is a place, and a place does not
+>   change colour because the phone did. Its warmth comes from the hearth light, whose
+>   reach is driven by the same ledger-derived `warmth()` as the flame on the front
+>   page — it never reads a clock and it never goes out.
+>
+> **Two art mistakes worth recording, because both looked fine in source and wrong on
+> screen.** The first floor tile packed three planks into every sixteen pixels, so the
+> seams were denser than anything standing on them and it read as **brickwork**. The
+> fix over-corrected: giving every tile its own end-joint put a join every sixteen
+> pixels in both directions and it read as **panelling**. Only the second variant
+> carries an end-joint now, so joins land every thirty-two pixels, staggered. *Neither
+> was visible until it was rendered at size and looked at* — the sprite sheet at thumb
+> size looked correct both times.
+>
+> **A doctor check for the tileset (check 5b, now 12 checks).** A mistyped palette
+> character is not an error at any level: that pixel is simply transparent, and the
+> sprite comes out with a hole in it. A Cyrillic `о` pasted into the mirror had already
+> done exactly that. It also verifies every sprite the shop names actually exists —
+> otherwise a purchase takes the Embers and changes nothing visible, which is
+> indistinguishable from a broken buy. **All four failure modes were watched failing.**
+>
+> **`shop.json`'s v1 header claimed `slot` was frozen alongside `id`. That was an
+> over-claim and is corrected in the v2 header** — a cell is not stored in any event,
+> so rearranging the room is a layout change, not a migration. Freezing it would have
+> meant the room could never be redecorated, which is the opposite of the product.
+>
+> **49 tests, doctor HEALTHY at 12 checks.** New tests cover overlap and out-of-bounds
+> placement, sprites existing, draw order (rugs, wall, then floor back-to-front), the
+> room never being empty, and the room never being completely full.
+>
+> **Still not verified: the service worker**, unchanged from 0.5.0. The in-app test
+> browser refuses to register one; the file serves 200 as `text/javascript`. First
+> thing to check on the phone.

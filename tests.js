@@ -465,21 +465,87 @@
         });
       });
 
-      t("shop: every item names a registered currency, a real skill and a real slot", function () {
+      t("shop: every item names a registered currency and a real skill", function () {
         const ids = L.currencyIdSet(currencies);
         const skills = new Set(currencies.currencies
           .filter((c) => c.class === "skill").map((c) => c.id.split(":")[1]));
-        const slots = new Set(shop.rooms[0].slots.map((s) => s.id));
-        const seenId = new Set(), seenSlot = new Set();
+        const seenId = new Set();
         shop.items.forEach((i) => {
           ok(!seenId.has(i.id), `duplicate item id: ${i.id}`);
           seenId.add(i.id);
           ok(skills.has(i.skill), `item ${i.id} has unknown skill ${i.skill}`);
-          ok(slots.has(i.slot), `item ${i.id} sits in unknown slot ${i.slot}`);
-          ok(!seenSlot.has(i.slot), `two items share slot ${i.slot}`);
-          seenSlot.add(i.slot);
           Object.keys(i.cost).forEach((c) =>
             ok(ids.has(c), `item ${i.id} is priced in unregistered currency ${c}`));
+        });
+      });
+
+      t("shop: no two things overlap, and nothing hangs off the room", function () {
+        /* Placement is fixed for now, so a bad cell is a bug that ships. Two
+         * items in one place looks like a rendering fault rather than a data
+         * one, which is exactly the kind that gets stared at for an hour. */
+        const room = shop.room;
+        const grid = Object.create(null);
+        const all = shop.items.concat(room.fixtures || []);
+        all.forEach((i) => {
+          const [cx, cy] = i.cell, [w, h] = i.size;
+          ok(cx >= 0 && cy >= 0 && cx + w <= room.cols && cy + h <= room.rows,
+             `${i.id} at ${i.cell} size ${i.size} falls outside the ${room.cols}x${room.rows} room`);
+          const wallItem = i.layer === "wall";
+          ok(wallItem ? cy < room.wall_rows : cy >= room.wall_rows,
+             `${i.id} is on layer "${i.layer}" but sits at row ${cy} ` +
+             `(wall rows are 0-${room.wall_rows - 1})`);
+          for (let x = cx; x < cx + w; x++) {
+            for (let y = cy; y < cy + h; y++) {
+              const key = x + "," + y;
+              ok(!grid[key], `${i.id} overlaps ${grid[key]} at ${key}`);
+              grid[key] = i.id;
+            }
+          }
+        });
+      });
+
+      t("shop: every sprite named actually exists in the tileset", function () {
+        /* A missing sprite renders as nothing at all — you buy a thing, it takes
+         * your Embers, and the room looks unchanged. Silent, and indistinguishable
+         * from a broken purchase. */
+        const T = (typeof require === "function")
+          ? require("./tiles.js")
+          : (typeof Tiles !== "undefined" ? Tiles : null);
+        if (!T) return;
+        shop.items.concat(shop.room.fixtures || []).forEach((i) => {
+          ok(T.has(i.sprite), `${i.id} names sprite "${i.sprite}", which the tileset does not have`);
+        });
+      });
+
+      t("shop: the room always has something in it, even unfurnished", function () {
+        /* An empty room on day one reads as a punishment for being new. The
+         * hearth is a fixture: never bought, never lost, always drawn. */
+        const empty = S.placed([], shop);
+        ok(empty.length > 0, "a brand-new room draws nothing at all");
+        ok(empty.every((p) => p.fixture), "an unowned item was drawn in an empty room");
+      });
+
+      t("shop: the room leaves space to grow into", function () {
+        const room = shop.room;
+        ok(S.vacantCells([], shop).length > 0, "a new room offers nowhere to put anything");
+        const evs = shop.items.map((i) => S.buyEvent(L, i));
+        ok(S.vacantCells(evs, shop).length > 0,
+           "buying everything fills the room completely — there is nothing left to want");
+        ok(S.placed(evs, shop).length === shop.items.length + (room.fixtures || []).length,
+           "owning everything did not place everything");
+      });
+
+      t("shop: things are drawn back to front, rugs underneath", function () {
+        const evs = shop.items.map((i) => S.buyEvent(L, i));
+        const order = S.placed(evs, shop);
+        const rank = { rug: 0, wall: 1, floor: 2 };
+        let last = -1, lastRow = -1;
+        order.forEach((p) => {
+          const r = rank[p.item.layer];
+          ok(r >= last, `layer ${p.item.layer} drawn after a later layer`);
+          if (r !== last) { last = r; lastRow = -1; }
+          ok(p.item.cell[1] >= lastRow, "a nearer row was drawn before a further one");
+          lastRow = p.item.cell[1];
         });
       });
 

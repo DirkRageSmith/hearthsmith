@@ -10,13 +10,16 @@
   /* Same palette as index.html, deliberately duplicated rather than extracted.
      Extracting it would add a stylesheet to the shell, and a shell file is a
      thing that has to be cache-busted forever. Two copies of eleven custom
-     properties is the cheaper of the two debts at this size. */
+     properties is the cheaper of the two debts at this size.
+
+     NOTE: this palette themes the INTERFACE. The room itself has its own fixed
+     palette in tiles.js and does not follow light/dark — a room is a place, and
+     a place does not change colour because the phone did. */
   :root{
     --bg:#151013; --panel:#1e1719; --panel-2:#261d20; --line:#3a2c2f;
     --ink:#f3e9e2; --dim:#a8968f; --faint:#7b6b67;
     --ember:#ff9d4d; --ember-soft:#5a3620; --glow:#ffce8a;
     --body:#8fbf7f; --home:#7fa8d8; --kitchen:#e2a06a; --craft:#b79bd8; --community:#e08fa8;
-    --wood:#7a5238; --wood-2:#5d3d29; --cloth:#8d6a52; --metal:#6d6a6b; --leaf:#6f9a5e;
     --r:14px;
   }
   @media (prefers-color-scheme: light){
@@ -37,17 +40,22 @@
   header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
   h1{font-size:1.35rem;margin:0;letter-spacing:.2px}
   .sub{color:var(--dim);font-size:.85rem;margin-top:2px}
-  a.back{color:var(--dim);text-decoration:none;font-size:.8rem;border:1px solid var(--line);
-         border-radius:10px;padding:9px 13px;min-height:40px;display:inline-flex;align-items:center}
+  .ghost{
+    appearance:none;cursor:pointer;font:inherit;font-size:.8rem;min-height:40px;
+    display:inline-flex;align-items:center;text-decoration:none;
+    background:transparent;color:var(--dim);border:1px solid var(--line);
+    border-radius:10px;padding:9px 13px;
+  }
 
   /* ---- the room ---- */
   .room{
     border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
-    background:var(--panel);margin-bottom:14px;
+    background:#2b211c;margin-bottom:14px;line-height:0;
   }
   .room svg{display:block;width:100%;height:auto}
-  .slot-empty{fill:none;stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 5;opacity:.75}
-  .roomline{color:var(--dim);font-size:.8rem;text-align:center;padding:0 12px 12px}
+  .vacant{fill:#ffffff;fill-opacity:.045;stroke:#ffffff;stroke-opacity:.13;
+          stroke-width:1;stroke-dasharray:3 3}
+  .roomline{color:var(--dim);font-size:.8rem;text-align:center;padding:10px 12px;line-height:1.5}
 
   .bal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
@@ -60,14 +68,14 @@
 
   .items{display:grid;gap:8px}
   .row{
-    display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:11px;
+    display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:11px;
     background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;
   }
-  .row .thumb{width:44px;height:44px;border-radius:9px;background:var(--panel-2);display:block}
+  .row .thumb{width:46px;height:46px;border-radius:9px;background:#3a2f28;display:block;padding:3px}
   .row .name{font-size:.9rem;line-height:1.3}
   .row .blurb{color:var(--faint);font-size:.76rem;line-height:1.35;margin-top:2px}
   .row .why{color:var(--dim);font-size:.74rem;margin-top:3px}
-  .row.locked .thumb{opacity:.32}
+  .row.locked .thumb{opacity:.3;filter:grayscale(.8)}
   .row.locked .name{color:var(--dim)}
   .row.owned{background:var(--ember-soft);border-color:var(--ember)}
 
@@ -82,7 +90,6 @@
   button.buy.ready{border-color:var(--ember);color:var(--ember)}
   button.buy.confirm{background:var(--ember);border-color:var(--ember);color:#2a1608;font-weight:700}
   button.buy[disabled]{opacity:.5;cursor:default}
-  .have{color:var(--faint);font-size:.74rem;text-align:right;margin-top:3px;font-variant-numeric:tabular-nums}
 
   footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);
          color:var(--faint);font-size:.74rem;line-height:1.7}
@@ -98,129 +105,17 @@
 
 <header>
   <div>
-    <h1>The main room</h1>
+    <h1 id="roomtitle">The main room</h1>
     <div class="sub" id="roomsub">&nbsp;</div>
   </div>
-  <a class="back" href="index.html">back</a>
+  <a class="ghost" href="index.html">back</a>
 </header>
 
 <div class="room">
-  <svg id="roomsvg" viewBox="0 0 400 260" role="img" aria-labelledby="roomdesc">
+  <svg id="roomsvg" role="img" aria-labelledby="roomdesc" preserveAspectRatio="xMidYMid meet">
     <title id="roomdesc">Your room</title>
-
-    <!-- The sprites. Hand-authored, flat, and deliberately few shapes each: they
-         have to read at 44 pixels in a list and at full width in the room, and
-         they must not need an artist to extend. Kenney (CC0) is the decided
-         answer when real art arrives (NEXT.md slice 1.2); until then this keeps
-         the licence question entirely out of the repo. -->
-    <defs>
-      <symbol id="sp-bed" viewBox="0 0 100 100">
-        <rect x="6" y="42" width="88" height="34" rx="5" fill="var(--wood)"/>
-        <rect x="6" y="30" width="16" height="46" rx="4" fill="var(--wood-2)"/>
-        <rect x="80" y="38" width="14" height="38" rx="4" fill="var(--wood-2)"/>
-        <rect x="22" y="44" width="60" height="20" rx="4" fill="var(--cloth)"/>
-        <rect x="26" y="38" width="24" height="14" rx="5" fill="#e8ddd2"/>
-        <rect x="12" y="76" width="8" height="12" rx="2" fill="var(--wood-2)"/>
-        <rect x="80" y="76" width="8" height="12" rx="2" fill="var(--wood-2)"/>
-      </symbol>
-      <symbol id="sp-stove" viewBox="0 0 100 100">
-        <rect x="16" y="30" width="68" height="58" rx="6" fill="var(--metal)"/>
-        <rect x="22" y="52" width="56" height="30" rx="4" fill="#2b2628"/>
-        <rect x="27" y="57" width="46" height="20" rx="3" fill="var(--ember)" opacity=".55"/>
-        <circle cx="34" cy="40" r="6" fill="#2b2628"/>
-        <circle cx="52" cy="40" r="6" fill="#2b2628"/>
-        <circle cx="70" cy="40" r="4" fill="var(--ember)"/>
-        <rect x="16" y="24" width="68" height="7" rx="3" fill="#83807f"/>
-      </symbol>
-      <symbol id="sp-desk" viewBox="0 0 100 100">
-        <rect x="10" y="44" width="80" height="9" rx="3" fill="var(--wood)"/>
-        <rect x="14" y="53" width="10" height="34" rx="2" fill="var(--wood-2)"/>
-        <rect x="76" y="53" width="10" height="34" rx="2" fill="var(--wood-2)"/>
-        <rect x="30" y="53" width="42" height="20" rx="3" fill="var(--wood-2)"/>
-        <circle cx="51" cy="63" r="2.6" fill="var(--glow)"/>
-        <rect x="24" y="30" width="20" height="14" rx="2" fill="#e8ddd2"/>
-        <rect x="58" y="34" width="14" height="10" rx="2" fill="var(--craft)"/>
-      </symbol>
-      <symbol id="sp-table" viewBox="0 0 100 100">
-        <ellipse cx="50" cy="46" rx="38" ry="11" fill="var(--wood)"/>
-        <rect x="46" y="52" width="8" height="30" fill="var(--wood-2)"/>
-        <rect x="30" y="80" width="40" height="7" rx="3" fill="var(--wood-2)"/>
-        <circle cx="38" cy="44" r="6" fill="#e8ddd2"/>
-        <circle cx="62" cy="44" r="6" fill="#e8ddd2"/>
-      </symbol>
-      <symbol id="sp-chair" viewBox="0 0 100 100">
-        <rect x="30" y="24" width="40" height="34" rx="6" fill="var(--cloth)"/>
-        <rect x="26" y="54" width="48" height="12" rx="4" fill="var(--wood)"/>
-        <rect x="28" y="66" width="7" height="20" rx="2" fill="var(--wood-2)"/>
-        <rect x="65" y="66" width="7" height="20" rx="2" fill="var(--wood-2)"/>
-      </symbol>
-      <symbol id="sp-shelf" viewBox="0 0 100 100">
-        <rect x="12" y="24" width="76" height="7" rx="2" fill="var(--wood)"/>
-        <rect x="12" y="52" width="76" height="7" rx="2" fill="var(--wood)"/>
-        <rect x="12" y="80" width="76" height="7" rx="2" fill="var(--wood)"/>
-        <rect x="20" y="8" width="7" height="16" fill="var(--craft)"/>
-        <rect x="29" y="6" width="7" height="18" fill="var(--community)"/>
-        <rect x="38" y="10" width="7" height="14" fill="var(--kitchen)"/>
-        <rect x="22" y="38" width="20" height="14" rx="2" fill="var(--home)"/>
-        <circle cx="66" cy="45" r="7" fill="var(--leaf)"/>
-        <rect x="24" y="70" width="26" height="10" rx="2" fill="var(--cloth)"/>
-      </symbol>
-      <symbol id="sp-window" viewBox="0 0 100 100">
-        <rect x="16" y="14" width="68" height="66" rx="5" fill="var(--wood-2)"/>
-        <rect x="22" y="20" width="56" height="54" rx="3" fill="var(--glow)" opacity=".55"/>
-        <rect x="48" y="20" width="4" height="54" fill="var(--wood-2)"/>
-        <rect x="22" y="45" width="56" height="4" fill="var(--wood-2)"/>
-        <rect x="12" y="80" width="76" height="7" rx="2" fill="var(--wood)"/>
-      </symbol>
-      <symbol id="sp-curtains" viewBox="0 0 100 100">
-        <rect x="10" y="12" width="80" height="6" rx="3" fill="var(--wood-2)"/>
-        <path d="M14 18 q10 30 0 66 h18 q-8 -34 0 -66 z" fill="var(--cloth)"/>
-        <path d="M86 18 q-10 30 0 66 h-18 q8 -34 0 -66 z" fill="var(--cloth)"/>
-        <rect x="36" y="18" width="28" height="66" fill="var(--panel-2)" opacity=".7"/>
-      </symbol>
-      <symbol id="sp-door" viewBox="0 0 100 100">
-        <rect x="24" y="10" width="52" height="80" rx="4" fill="var(--wood)"/>
-        <rect x="31" y="18" width="38" height="30" rx="3" fill="var(--wood-2)"/>
-        <rect x="31" y="54" width="38" height="28" rx="3" fill="var(--wood-2)"/>
-        <circle cx="66" cy="52" r="3.6" fill="var(--glow)"/>
-      </symbol>
-      <symbol id="sp-rug" viewBox="0 0 100 100">
-        <ellipse cx="50" cy="56" rx="44" ry="20" fill="var(--cloth)"/>
-        <ellipse cx="50" cy="56" rx="32" ry="13" fill="none" stroke="var(--ember)" stroke-width="3" opacity=".65"/>
-        <ellipse cx="50" cy="56" rx="18" ry="7" fill="var(--ember)" opacity=".35"/>
-      </symbol>
-      <symbol id="sp-tools" viewBox="0 0 100 100">
-        <rect x="12" y="22" width="76" height="8" rx="3" fill="var(--wood-2)"/>
-        <rect x="22" y="30" width="6" height="34" rx="2" fill="var(--metal)"/>
-        <rect x="17" y="60" width="16" height="8" rx="2" fill="var(--wood)"/>
-        <rect x="44" y="30" width="6" height="26" rx="2" fill="var(--wood)"/>
-        <path d="M38 30 h18 l-3 -10 h-12 z" fill="var(--metal)"/>
-        <rect x="68" y="30" width="6" height="30" rx="2" fill="var(--wood)"/>
-        <circle cx="71" cy="66" r="8" fill="var(--metal)"/>
-      </symbol>
-      <symbol id="sp-pantry" viewBox="0 0 100 100">
-        <rect x="18" y="14" width="64" height="74" rx="5" fill="var(--wood)"/>
-        <rect x="24" y="20" width="52" height="20" rx="3" fill="var(--wood-2)"/>
-        <rect x="24" y="46" width="52" height="20" rx="3" fill="var(--wood-2)"/>
-        <circle cx="34" cy="30" r="5" fill="var(--kitchen)"/>
-        <circle cx="48" cy="30" r="5" fill="var(--leaf)"/>
-        <circle cx="62" cy="30" r="5" fill="var(--community)"/>
-        <rect x="30" y="52" width="10" height="10" rx="2" fill="var(--glow)"/>
-        <rect x="46" y="52" width="10" height="10" rx="2" fill="var(--ember)"/>
-        <rect x="24" y="72" width="52" height="10" rx="3" fill="var(--wood-2)"/>
-      </symbol>
-    </defs>
-
-    <!-- wall, floor, and a hearth that is always there: the room is never empty,
-         because an empty room on day one reads as a punishment for being new. -->
-    <rect x="0" y="0" width="400" height="96" fill="var(--panel-2)"/>
-    <rect x="0" y="96" width="400" height="164" fill="var(--panel)"/>
-    <rect x="0" y="94" width="400" height="3" fill="var(--line)"/>
-    <g id="hearthglow" opacity="0.5">
-      <ellipse cx="200" cy="120" rx="150" ry="46" fill="var(--ember)" opacity=".10"/>
-    </g>
-    <g id="slots"></g>
-    <g id="things"></g>
+    <defs id="roomdefs"></defs>
+    <g id="scene"></g>
   </svg>
   <div class="roomline" id="roomline">&nbsp;</div>
 </div>
@@ -236,14 +131,16 @@
 
 <script src="ledger.js"></script>
 <script src="character.js"></script>
+<script src="tiles.js"></script>
 <script src="shop.js"></script>
 <script>
 (function () {
   "use strict";
-  var L = window.Ledger, C = window.Character, S = window.Shop;
+  var L = window.Ledger, C = window.Character, S = window.Shop, T = window.Tiles;
   var SHOP = null, CUR = null, IDS = null;
   var arming = null, armTimer = null;
   var $ = function (id) { return document.getElementById(id); };
+  var NS = "http://www.w3.org/2000/svg";
 
   var SKILL_LABEL = { body:"Body", home:"Home", kitchen:"Kitchen", craft:"Craft", community:"Community" };
   var ORDER = ["home", "body", "kitchen", "craft", "community"];
@@ -253,6 +150,7 @@
     fetch("currencies.json").then(function (r) { return r.json(); })
   ]).then(function (both) {
     SHOP = both[0]; CUR = both[1]; IDS = L.currencyIdSet(CUR);
+    buildDefs();
     render();
   }).catch(function () {
     var b = $("boot"); b.hidden = false;
@@ -261,14 +159,151 @@
       "<code>shop.json</code>. Run <code>python -m http.server 8080</code> here.";
   });
 
+  /* ---- the tileset, installed once -------------------------------------
+     Every sprite becomes a <symbol>, so the room and the shop thumbnails share
+     one definition. The wall and floor are <pattern>s rather than a few hundred
+     <use> elements: a 16x10 room would be 160 nodes redrawn on every purchase,
+     and a pattern is two. */
+  function buildDefs() {
+    var tile = SHOP.room.tile;
+    var d = $("roomdefs");
+    d.innerHTML =
+      T.defs() +
+      '<pattern id="p-wall" width="' + tile + '" height="' + tile + '" patternUnits="userSpaceOnUse">' +
+        '<use href="#t-wall" width="' + tile + '" height="' + tile + '"/></pattern>' +
+      '<pattern id="p-wainscot" width="' + tile + '" height="' + tile + '" patternUnits="userSpaceOnUse">' +
+        '<use href="#t-wainscot" width="' + tile + '" height="' + tile + '"/></pattern>' +
+      /* Two board variants staggered over a 2x2 cell, so a wide floor does not
+         show an obvious repeat every sixteen pixels. */
+      '<pattern id="p-floor" width="' + (tile * 2) + '" height="' + (tile * 2) + '" patternUnits="userSpaceOnUse">' +
+        '<use href="#t-floor_a" x="0" y="0" width="' + tile + '" height="' + tile + '"/>' +
+        '<use href="#t-floor_b" x="' + tile + '" y="0" width="' + tile + '" height="' + tile + '"/>' +
+        '<use href="#t-floor_b" x="0" y="' + tile + '" width="' + tile + '" height="' + tile + '"/>' +
+        '<use href="#t-floor_a" x="' + tile + '" y="' + tile + '" width="' + tile + '" height="' + tile + '"/>' +
+      '</pattern>' +
+      /* The hearth light. Its reach is driven by the ledger, never by a clock or
+         a timer — see warmth(). It only ever adds light; there is no state in
+         which the room gets darker than it was. */
+      '<radialGradient id="g-hearth" cx="50%" cy="50%" r="50%">' +
+        '<stop offset="0%" stop-color="#ff9d4d" stop-opacity=".30"/>' +
+        '<stop offset="45%" stop-color="#ff9d4d" stop-opacity=".10"/>' +
+        '<stop offset="100%" stop-color="#ff9d4d" stop-opacity="0"/>' +
+      '</radialGradient>' +
+      /* Corners fall away slightly. Pure decoration, and it is what stops a flat
+         tiled field from reading as wallpaper instead of a room. */
+      '<radialGradient id="g-vignette" cx="50%" cy="46%" r="75%">' +
+        '<stop offset="66%" stop-color="#000000" stop-opacity="0"/>' +
+        '<stop offset="100%" stop-color="#000000" stop-opacity=".26"/>' +
+      '</radialGradient>';
+  }
+
+  /* ---- warmth ----------------------------------------------------------
+     Lifted from index.html's hearth, and the same rules apply: it rises with
+     recent activity and settles toward a FLOOR that rises permanently with
+     total XP. It never reaches zero, so the worst the room ever looks after
+     months of use is better than the best it looked in week one. It is not a
+     currency, it buys nothing, and it gates nothing. */
+  function warmth(events, totals) {
+    var now = Date.now(), recent = 0;
+    events.forEach(function (e) {
+      if (!e.ts) return;
+      var age = (now - new Date(e.ts).getTime()) / 86400000;
+      if (age >= 0 && age < 3) recent += (1 - age / 3);
+    });
+    var floor = Math.min(0.42, Math.log10(1 + (totals["core:xp"] || 0) / 100) * 0.30);
+    return Math.max(floor, Math.min(1, floor + recent / 7));
+  }
+
+  /* ---- the room drawing ------------------------------------------------- */
+  function el(name, attrs) {
+    var n = document.createElementNS(NS, name);
+    Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    return n;
+  }
+
+  function drawRoom(events, totals) {
+    var room = SHOP.room, tile = room.tile;
+    var W = room.cols * tile, H = room.rows * tile;
+    var wallH = room.wainscot_row * tile;          // plaster band
+    var floorY = room.wall_rows * tile;
+
+    var svg = $("roomsvg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+
+    var g = $("scene");
+    while (g.firstChild) g.removeChild(g.firstChild);
+
+    g.appendChild(el("rect", { x:0, y:0, width:W, height:wallH, fill:"url(#p-wall)" }));
+    g.appendChild(el("rect", { x:0, y:wallH, width:W, height:tile, fill:"url(#p-wainscot)" }));
+    g.appendChild(el("rect", { x:0, y:floorY, width:W, height:H - floorY, fill:"url(#p-floor)" }));
+
+    /* Empty floor cells, faintly. "There is room for more", never "you have
+       nothing" — the same reason a locked item stays visible in the shop. */
+    S.vacantCells(events, SHOP).forEach(function (v) {
+      g.appendChild(el("rect", {
+        x: v.cell[0] * tile + 2, y: v.cell[1] * tile + 2,
+        width: v.size[0] * tile - 4, height: v.size[1] * tile - 4,
+        rx: 3, "class": "vacant"
+      }));
+    });
+
+    /* Already in draw order: rugs, then wall, then floor back-to-front. */
+    var here = S.placed(events, SHOP);
+    here.forEach(function (p) {
+      var it = p.item, c = it.cell, s = it.size;
+      if (it.layer === "floor") {
+        /* A soft contact shadow. Without one, furniture floats and the room
+           reads as a sticker sheet rather than as a place. */
+        g.appendChild(el("ellipse", {
+          cx: (c[0] + s[0] / 2) * tile, cy: (c[1] + s[1]) * tile - 2,
+          rx: s[0] * tile * 0.40, ry: tile * 0.17,
+          fill: "#000000", "fill-opacity": ".22"
+        }));
+      }
+      var u = el("use", {
+        href: "#t-" + it.sprite,
+        x: c[0] * tile, y: c[1] * tile,
+        width: s[0] * tile, height: s[1] * tile
+      });
+      var title = document.createElementNS(NS, "title");
+      title.textContent = it.label || it.id;
+      u.appendChild(title);
+      g.appendChild(u);
+    });
+
+    var w = warmth(events, totals);
+    var fire = (room.fixtures || [])[0];
+    if (fire) {
+      var fx = (fire.cell[0] + fire.size[0] / 2) * tile;
+      var fy = (fire.cell[1] + fire.size[1] / 2) * tile;
+      var reach = tile * (4 + w * 6);
+      g.appendChild(el("ellipse", {
+        cx: fx, cy: fy, rx: reach, ry: reach * 0.72,
+        fill: "url(#g-hearth)", opacity: (0.30 + w * 0.55).toFixed(3),
+        "pointer-events": "none"
+      }));
+    }
+    g.appendChild(el("rect", {
+      x:0, y:0, width:W, height:H, fill:"url(#g-vignette)", "pointer-events":"none"
+    }));
+
+    var built = here.filter(function (p) { return !p.fixture; }).length;
+    $("roomline").textContent = built === 0
+      ? "The hearth is lit and the room is otherwise bare. Everything here is bought with Embers you already earned."
+      : built === 1
+        ? "The hearth, and one thing you built."
+        : "The hearth, and " + built + " things you built.";
+    return built;
+  }
+
   /* ---- buying ----------------------------------------------------------
-   * TWO TAPS, ALWAYS. Nothing built is ever taken back (§4 rule 2), which is a
-   * kindness in every case except one: a mis-tap that spends three weeks of
-   * Embers cannot be undone by the retraction mechanism either, because
-   * retraction corrects *what you did*, not what you chose to buy. So the
-   * confirmation is the only guard this action gets, and it is not optional.
-   * It disarms itself after a few seconds so it never sits waiting to be
-   * brushed. */
+     TWO TAPS, ALWAYS. Nothing built is ever taken back (§4 rule 2), which is a
+     kindness in every case except one: a mis-tap that spends three weeks of
+     Embers cannot be undone by the retraction mechanism either, because
+     retraction corrects *what you did*, not what you chose to buy. So the
+     confirmation is the only guard this action gets, and it is not optional.
+     It disarms itself after a few seconds so it never sits waiting to be
+     brushed. */
   function arm(item, btn) {
     if (arming === item.id) { commit(item); return; }
     disarm();
@@ -293,67 +328,28 @@
     render();
   }
 
-  /* ---- the room drawing ------------------------------------------------- */
-  function drawRoom(events) {
-    var room = SHOP.rooms[0];
-    var svg = $("roomsvg");
-    svg.setAttribute("viewBox", room.view.join(" "));
-
-    var slots = $("slots"); slots.innerHTML = "";
-    var things = $("things"); things.innerHTML = "";
-    var here = S.placed(events, SHOP);
-    var filled = {};
-    here.forEach(function (p) { filled[p.slot.id] = true; });
-
-    /* Empty slots are drawn, faintly. The room says "there is room for more"
-       rather than "you have nothing" — same reason a locked item stays visible
-       in the shop below. */
-    room.slots.forEach(function (s) {
-      if (filled[s.id]) return;
-      var r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      r.setAttribute("x", s.x + 6); r.setAttribute("y", s.y + 6);
-      r.setAttribute("width", s.w - 12); r.setAttribute("height", s.h - 12);
-      r.setAttribute("rx", 8); r.setAttribute("class", "slot-empty");
-      slots.appendChild(r);
-    });
-
-    here.forEach(function (p) {
-      var u = document.createElementNS("http://www.w3.org/2000/svg", "use");
-      u.setAttribute("href", "#sp-" + p.item.sprite);
-      u.setAttribute("x", p.slot.x); u.setAttribute("y", p.slot.y);
-      u.setAttribute("width", p.slot.w); u.setAttribute("height", p.slot.h);
-      var title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-      title.textContent = p.item.label;
-      u.appendChild(title);
-      things.appendChild(u);
-    });
-
-    $("roomline").textContent = here.length === 0
-      ? "Empty, for now. Everything here is bought with Embers you already earned."
-      : here.length === 1
-        ? "One thing you built."
-        : here.length + " things you built.";
-  }
-
   /* ---- render ----------------------------------------------------------- */
   function render() {
     var events = L.read();
+    var totals = L.balances(events);
     var rows = S.view(events, SHOP, { ledger: L, character: C });
-    var bal = L.balances(events);
-    var have = Math.round(bal["core:embers"] || 0);
+    var have = Math.round(totals["core:embers"] || 0);
 
+    $("roomtitle").textContent = SHOP.room.label;
     $("embers").textContent = have.toLocaleString();
     $("ownedn").textContent = rows.filter(function (r) { return r.owned; }).length;
     $("roomsub").textContent = "yours, and nothing in it can ever be taken back";
 
-    drawRoom(events);
+    drawRoom(events, totals);
 
     var wrap = $("shop"); wrap.innerHTML = "";
     ORDER.forEach(function (skill) {
       var mine = rows.filter(function (r) { return r.item.skill === skill; });
       if (!mine.length) return;
+      var owned = mine.filter(function (r) { return r.owned; }).length;
       var h = document.createElement("h2");
-      h.textContent = SKILL_LABEL[skill] + " · level " + mine[0].level;
+      h.textContent = SKILL_LABEL[skill] + " · level " + mine[0].level +
+                      " · " + owned + " of " + mine.length;
       wrap.appendChild(h);
       var list = document.createElement("div"); list.className = "items";
       mine.forEach(function (r) { list.appendChild(rowFor(r)); });
@@ -369,16 +365,14 @@
   }
 
   function rowFor(r) {
-    var el = document.createElement("div");
-    el.className = "row" + (r.owned ? " owned" : r.unlocked ? "" : " locked");
+    var el2 = document.createElement("div");
+    el2.className = "row" + (r.owned ? " owned" : r.unlocked ? "" : " locked");
 
-    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    var svg = document.createElementNS(NS, "svg");
     svg.setAttribute("class", "thumb");
-    svg.setAttribute("viewBox", "0 0 100 100");
-    var u = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    u.setAttribute("href", "#sp-" + r.item.sprite);
-    svg.appendChild(u);
-    el.appendChild(svg);
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.appendChild(el("use", { href: "#t-" + r.item.sprite, width: 16, height: 16 }));
+    el2.appendChild(svg);
 
     var mid = document.createElement("div");
     var why = r.owned ? "yours"
@@ -388,7 +382,7 @@
     mid.innerHTML = '<div class="name">' + esc(r.item.label) + '</div>' +
                     '<div class="blurb">' + esc(r.item.blurb || "") + '</div>' +
                     (why ? '<div class="why">' + esc(why) + '</div>' : '');
-    el.appendChild(mid);
+    el2.appendChild(mid);
 
     var right = document.createElement("div");
     var b = document.createElement("button");
@@ -401,8 +395,8 @@
       if (r.can.ok) b.addEventListener("click", function () { arm(r.item, b); });
     }
     right.appendChild(b);
-    el.appendChild(right);
-    return el;
+    el2.appendChild(right);
+    return el2;
   }
 
   function esc(s) {

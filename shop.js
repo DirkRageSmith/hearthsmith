@@ -154,18 +154,60 @@
     });
   }
 
-  /* What is standing in the room right now, in draw order (the slot order in
-   * shop.json), so a caller never has to sort it correctly to look right. */
+  /* ---- what is standing in the room right now -----------------------------
+   * Returned IN DRAW ORDER, so a caller never has to sort it correctly to look
+   * right. Rugs first (they go under everything), then the wall, then floor
+   * furniture back-to-front by row — the one ordering rule that makes a
+   * straight-on room read as having depth instead of as a sticker sheet.
+   *
+   * Fixtures come along too. The hearth is not owned and cannot be bought; it
+   * is part of the room, so nothing has to special-case it downstream. */
+  const LAYER_ORDER = { rug: 0, wall: 1, floor: 2 };
+
   function placed(events, shop) {
     const own = ownsSet(events);
-    const room = (shop.rooms || [])[0];
-    if (!room) return [];
-    const bySlot = {};
-    (shop.items || []).forEach(function (i) { if (own[i.id]) bySlot[i.slot] = i; });
-    return room.slots
-      .filter(function (s) { return bySlot[s.id]; })
-      .map(function (s) { return { slot: s, item: bySlot[s.id] }; });
+    const room = shop.room || {};
+    const out = (shop.items || [])
+      .filter(function (i) { return own[i.id]; })
+      .map(function (i) { return { item: i, fixture: false }; })
+      .concat((room.fixtures || []).map(function (f) {
+        return { item: f, fixture: true };
+      }));
+
+    return out.sort(function (a, b) {
+      const la = LAYER_ORDER[a.item.layer] || 0, lb = LAYER_ORDER[b.item.layer] || 0;
+      if (la !== lb) return la - lb;
+      const ra = (a.item.cell || [0, 0])[1], rb = (b.item.cell || [0, 0])[1];
+      if (ra !== rb) return ra - rb;                       // back rows first
+      return (a.item.cell || [0, 0])[0] - (b.item.cell || [0, 0])[0];
+    });
   }
 
-  return { TARGET, owned, ownsSet, canBuy, skillLevel, buyEvent, view, placed };
+  /* Floor cells with nothing in them, so the room can draw them faintly. An
+   * empty room on day one must read as "there is space for more", never as
+   * "you have nothing" — the same reason a locked item stays visible above. */
+  function vacantCells(events, shop) {
+    const room = shop.room || {};
+    const taken = Object.create(null);
+    placed(events, shop).forEach(function (p) {
+      const c = p.item.cell, s = p.item.size || [1, 1];
+      for (let x = c[0]; x < c[0] + s[0]; x++) {
+        for (let y = c[1]; y < c[1] + s[1]; y++) taken[x + "," + y] = true;
+      }
+    });
+    const free = [];
+    /* Only whole 2x2 furniture footprints on the floor are offered as vacant —
+     * a grid of 1x1 dashes would read as graph paper, not as a room. */
+    for (let y = room.wall_rows; y + 1 < room.rows; y += 2) {
+      for (let x = 0; x + 1 < room.cols; x += 2) {
+        if (!taken[x + "," + y] && !taken[(x + 1) + "," + y] &&
+            !taken[x + "," + (y + 1)] && !taken[(x + 1) + "," + (y + 1)]) {
+          free.push({ cell: [x, y], size: [2, 2] });
+        }
+      }
+    }
+    return free;
+  }
+
+  return { TARGET, owned, ownsSet, canBuy, skillLevel, buyEvent, view, placed, vacantCells };
 });

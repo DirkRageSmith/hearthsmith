@@ -23,7 +23,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 1;
-  const SOURCE = "hearthsmith@0.8.0";
+  const SOURCE = "hearthsmith@0.9.0";
 
   /* THE LEDGER BELONGS TO THE PLAYER, NOT TO ONE GAME.
    *
@@ -442,6 +442,24 @@
     return { level: level, into: points - spent, need: next };
   }
 
+  /* ECONOMY.md §6 / ADR-024: the CHARACTER-level curve, wall-clock first,
+   * formula derived from it. Distinct from levelFor() above, which is the
+   * SKILL-TREE curve and gates the shop — conflating the two would silently
+   * change every skill level already shown there. This one turns total
+   * core:xp into a character level; nothing repurposes levelFor() for it.
+   * A character starts at level 1 with 0 xp, not level 0 — ADR-024's worked
+   * example counts 29 level-ups to reach level 30, which only holds if level
+   * 1 is the floor. */
+  function characterCost(n) {
+    return n < 100 ? 300 * Math.pow(1.016390, n - 1) : 1500;
+  }
+
+  function characterLevelFor(xp) {
+    let level = 1, spent = 0, next = characterCost(1);
+    while (xp >= spent + next) { spent += next; level++; next = characterCost(level); }
+    return { level: level, into: xp - spent, need: next };
+  }
+
   function localDayKey(iso) {
     return String(iso).slice(0, 10); // already local-with-offset, so this is the local day
   }
@@ -455,6 +473,6 @@
     nowIso, ulid, newEvent, validate, currencyIdSet,
     serialize, deserialize, read, write, append, appendAndSave, migrate,
     balances, highWaterBalances, visibleEvents, canRetract,
-    countUnknownKinds, levelFor, localDayKey, eventsOn
+    countUnknownKinds, levelFor, characterCost, characterLevelFor, localDayKey, eventsOn
   };
 });

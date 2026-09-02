@@ -21,7 +21,8 @@
   "classes": {
     "core": "Crosses every tool. Exactly three, forever. A fourth requires a new ADR.",
     "skill": "Universal meaning, domain-limited spending. Grows by sub-skill via dot notation.",
-    "local": "Owned by one tool, spendable only inside it, never convertible to core."
+    "local": "Owned by one tool, spendable only inside it, never convertible to core.",
+    "stat": "Universal meaning, world-permanent, never spent directly (ADR-024/ECONOMY.md §6). A NEW class rather than a fourth core currency: `core` is closed at exactly three by its own header, but a stat never gates a purchase the way `skill` does either — it gates and qualifies PER-GAME effects (a nicer decoration, a harder lock) and may never multiply an award. Stated here rather than slid in silently, per this file's own registry-changes-are-load-bearing rule."
   },
   "currencies": [
     {
@@ -104,6 +105,60 @@
       "status": "reserved",
       "only_buys": "FitFlexr's own unlocks — exercise packs, programme templates, its in-app cosmetics",
       "notes": "WORKED EXAMPLE, not yet live. Reserved here to prove the framework: a FitFlexr workout grants core:xp + core:embers + skill:body + fitflexr:reps in ONE event. The Embers are the world's, the Reps are FitFlexr's, and no exchange rate exists between them. Activate when FitFlexr starts writing to the ledger at Tier 2."
+    },
+    {
+      "id": "stat:str",
+      "name": "Strength",
+      "class": "stat",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing directly — gates and qualifies what a game offers when strength matters (a heavier lift attempted, a sturdier find), never what it costs or whether Embers unlock it",
+      "notes": "What you can move, force, and make yourself do. Fed by Body's sustained/hard tier (ECONOMY.md §6). Never multiplies a grant — see stat:luk for the rule stated once, at length."
+    },
+    {
+      "id": "stat:vit",
+      "name": "Vitality",
+      "class": "stat",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing directly — gates and qualifies what a game offers when endurance matters, never what it costs or whether Embers unlock it",
+      "notes": "What you take in and recover from. Fed by Kitchen's sustained tier (ECONOMY.md §6)."
+    },
+    {
+      "id": "stat:spd",
+      "name": "Speed",
+      "class": "stat",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing directly — gates and qualifies what a game offers when the small quick things matter, never what it costs or whether Embers unlock it",
+      "notes": "The small quick things you keep doing. Fed by every upkeep-tier action, across all five skills — tier, not frequency: ten in a day and ten spread across a month feed it identically. Nothing in this layer may ever read the gap between two timestamps (ECONOMY.md §6)."
+    },
+    {
+      "id": "stat:agi",
+      "name": "Agility",
+      "class": "stat",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing directly — gates and qualifies what a game offers when deftness matters, never what it costs or whether Embers unlock it",
+      "notes": "What you make and mend. Fed by Craft's sustained tier, plus fixing something (ECONOMY.md §6)."
+    },
+    {
+      "id": "stat:def",
+      "name": "Defense",
+      "class": "stat",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing directly — gates and qualifies what a game offers when upkeep of a place matters, never what it costs or whether Embers unlock it",
+      "notes": "What you keep in order and protect. Fed by Home's sustained tier (ECONOMY.md §6)."
+    },
+    {
+      "id": "stat:luk",
+      "name": "Luck",
+      "class": "stat",
+      "owner": "core",
+      "spendable": false,
+      "only_buys": "nothing directly — gates and qualifies what a game offers (what appears, an encounter, a nicer find), never what it costs, never what an action is worth, and never whether Embers unlock something",
+      "notes": "What the world brings you unbidden — luck is other people, so this is fed by Community (ECONOMY.md §6). THE RULE FOR ALL SIX, stated once here: a stat gates and qualifies, it never multiplies `grants`, at any tier, in any game, forever (ADR-024 Q6). Earning is global and never chosen; spending is always a game-local copy, and the world's stat itself never falls (ECONOMY.md §6, the one-way valve applied to stats)."
     },
     {
       "id": "guild:cleanup_tokens",

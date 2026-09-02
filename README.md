@@ -532,3 +532,63 @@ reads, and an undocumented park becomes an abandonment.*
 > sat unshipped — `main` really was current; `HEAD` was somewhere else. **"Up-to-date" is
 > not the same claim as "your work is live."** Check `git branch --show-current` before
 > believing a push, and check the live asset after.
+>
+> **2026-09-02 (Bellows pass) — slice 1.5, the stat layer (ADR-024/ECONOMY.md §6), built
+> whole.** STR/VIT/SPD/AGI/DEF/LUK now accrue silently from every event — ledger only, no
+> UI, exactly as the slice specified. `hearthsmith@0.9.0`.
+>
+> **What was built.** Six `stat:*` currencies registered in `currencies.json` under a NEW
+> fourth class, `"stat"` — not a fourth `core` currency (that class is closed at exactly
+> three) and not `skill` (a stat never gates a purchase). `only_buys` phrased as permission
+> and qualification, matching `skill:*`'s shape, never payment. Every action in
+> `catalog.json` gained a `stat` field: `tier === "upkeep"` always feeds `spd`, overriding
+> the skill below it; every other tier maps by skill (`body`→str, `kitchen`→vit,
+> `craft`→agi, `home`→def, `community`→luk) — resolved at log time so a future retune of
+> this table cannot rewrite what an old event already meant (ADR-012's precedent). A new
+> `characterCost()`/`characterLevelFor()` pair lives in `ledger.js` alongside `levelFor()` —
+> the character-level curve from §6 (`300 × 1.016390^(n-1)`, flat 1500 past level 100),
+> deliberately not a repurposing of `levelFor()`, which is the unrelated skill-tree curve
+> that gates the shop. The split itself — 4 points per level-up by largest remainder, +1 to
+> all six on a milestone level — lives in a new sibling module, `stats.js`: `character.js`'s
+> own header says extract it when game #2 ships, so the stat layer didn't have to wait on
+> that extraction to exist.
+>
+> **One arithmetic trap found by working the acceptance test, not by reading NEXT.md.** The
+> milestone formula is `floor((L-1)/5)`, correctly resolved by the previous session from
+> ADR-024's worked example. But that same document's own illustrative gloss — *"i.e. levels
+> 5, 10, 15"* — is wrong, and its "off-by-one" warning points the wrong direction. Landing
+> the milestone at 5/10/15/… gives **6** milestones by level 30 (152 points), not the
+> required 146. The formula only reproduces the mandated totals (146 at level 30, 510 at
+> level 100) when the milestone lands at **L ≡ 1 (mod 5), i.e. 6, 11, 16, 21, 26, …** —
+> confirmed by mutating the comparison to `floor(L/5)` and watching both the milestone test
+> and the worked-example test fail for exactly this reason, then reverting. The formula
+> shipped is the one that matches the required numbers; the prose gloss is the thing that
+> was wrong, and this entry is the correction since `NEXT.md` gets rewritten, not fixed in
+> place.
+>
+> **The vendoring seam (ADR-022, doctor check 10) held on the first real test.** Changing
+> `ledger.js` and `currencies.json` immediately failed "vendored ledger" until the same
+> byte-identical copies were re-written into FitFlexr (`C:\Users\regan\projects\swipefit`).
+> Re-copied and reverified HEALTHY. FitFlexr's working tree had five other files already
+> modified and uncommitted (not this pass's), left exactly as found — only `ledger.js` and
+> `currencies.json` were touched or committed there.
+>
+> **74 tests (was 65), doctor HEALTHY at 13 checks.** New coverage: the catalogue's
+> `stat` field matches the resolved mapping mechanically (so a future action can't drift
+> from the rule silently), the six stat currencies are registered, `validate()` accepts a
+> registered `stat:*` key and rejects an unregistered one, largest-remainder always sums to
+> exactly the requested total, the milestone lands at the right levels and nowhere else, a
+> stat total is a pure function of the ledger (same in, same out, twice), a total never
+> falls as more events are added — retraction included — and the worked example's two exact
+> numbers reproduce from a synthetic ledger built out of the real catalogue. Manually
+> verified beyond the suite too: 8 `shower` events (320 xp) through the real storage path
+> crossed into character level 2 and produced exactly 4 STR, 0 elsewhere.
+>
+> **Deliberately not built:** any UI (§6 says outright nothing shows this yet), the
+> character-sheet hub (ADR-026, comes after), per-game spending of stats (§6: each game's
+> own call), parties and bonded pairs (ADR-024 Q9, still open).
+>
+> **Unpushed, on purpose** — same shape as 1.4. `hearthsmith` is a public repo; committed to
+> a local branch, `bellows/stat-layer`, on top of the commit `main` was at when this pass
+> started. `main` is untouched. `dirkragesmith.github.io/hearthsmith/ledger.js` keeps
+> reporting `hearthsmith@0.8.0` until this is reviewed and merged.

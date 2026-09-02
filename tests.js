@@ -15,7 +15,7 @@
 })(typeof self !== "undefined" ? self : globalThis, function () {
   "use strict";
 
-  function makeSuite(L, catalog, currencies, C, S, shop) {
+  function makeSuite(L, catalog, currencies, C, S, shop, Stats) {
     const results = [];
     const t = (name, fn) => {
       try { fn(); results.push({ name, ok: true }); }
@@ -799,11 +799,144 @@
       }
     }
 
+    /* ---- 13. the stat layer (ADR-024, ECONOMY.md §6) ----------------------
+     * STR/VIT/SPD/AGI/DEF/LUK. Ledger only, no UI. A pure function of the
+     * ledger: no roll, nothing stored, and the worked example's two point
+     * totals (146 at level 30, 510 at level 100) are the acceptance test. */
+    if (Stats) {
+      const SKILL_STAT = { body: "str", kitchen: "vit", craft: "agi", home: "def", community: "luk" };
+
+      t("catalogue: every action's stat matches the resolved tier/skill mapping", function () {
+        catalog.actions.forEach((a) => {
+          const expected = a.tier === "upkeep" ? "spd" : SKILL_STAT[a.skill];
+          eq(a.stat, expected, `${a.verb} has stat "${a.stat}", expected "${expected}"`);
+        });
+      });
+
+      t("registry: all six stats are registered as their own class", function () {
+        const stats = currencies.currencies.filter((c) => c.class === "stat");
+        eq(stats.length, 6, "expected exactly six stat:* currencies");
+        Stats.STATS.forEach((s) =>
+          ok(stats.some((c) => c.id === "stat:" + s), `stat:${s} is not registered`));
+      });
+
+      t("stats: validate accepts a registered stat currency and rejects an unregistered one", function () {
+        const ids = L.currencyIdSet(currencies);
+        const good = L.newEvent({ verb: "x", skill: "body", grants: { "core:xp": 1, "stat:str": 3 } });
+        eq(L.validate(good, ids).length, 0, "a registered stat currency was rejected");
+        const bad = L.newEvent({ verb: "x", skill: "body", grants: { "core:xp": 1, "stat:madeup": 3 } });
+        ok(L.validate(bad, ids).some((e) => e.indexOf("stat:madeup") !== -1),
+           "an unregistered stat currency was accepted");
+      });
+
+      t("stats: largest-remainder always sums to exactly the requested total", function () {
+        const cases = [
+          { str: 1, vit: 0, spd: 0, agi: 0, def: 0, luk: 0 },
+          { str: 1, vit: 1, spd: 1, agi: 0, def: 0, luk: 0 },
+          { str: 3, vit: 2, spd: 3, agi: 3, def: 2, luk: 3 },
+          { str: 0, vit: 0, spd: 0, agi: 0, def: 0, luk: 0 }
+        ];
+        cases.forEach((w, i) => {
+          const split = Stats.largestRemainder(w, 4);
+          const sum = Stats.STATS.reduce((s, k) => s + split[k], 0);
+          const expected = Stats.STATS.reduce((s, k) => s + (w[k] || 0), 0) > 0 ? 4 : 0;
+          eq(sum, expected, `case ${i}: split summed to ${sum}, expected ${expected}`);
+        });
+      });
+
+      t("stats: the milestone lands on levels 6, 11, 16, ... (not 5, 10, 15)", function () {
+        /* The formula is floor((L-1)/5), landing where the count INCREASES —
+         * i.e. at L=6,11,16,..., not at multiples of 5. NEXT.md's own
+         * illustrative "i.e. levels 5, 10, 15" reads as the off-by-one this
+         * slice exists to avoid; the worked example's totals (146 at level
+         * 30, 19 milestones at level 100) only reproduce with this landing,
+         * checked directly below. */
+        const hit = [];
+        for (let level = 2; level <= 30; level++) {
+          if (Stats.milestonesThrough(level) > Stats.milestonesThrough(level - 1)) hit.push(level);
+        }
+        eq(hit.join(","), [6, 11, 16, 21, 26].join(","),
+           "milestone landed on the wrong levels through level 30");
+        eq(Stats.milestonesThrough(30), 5, "5 milestones should have accrued by level 30");
+        eq(Stats.milestonesThrough(100), 19, "19 milestones should have accrued by level 100");
+      });
+
+      t("stats: a stat total is a pure function of the ledger — same in, same out, twice", function () {
+        const evs = [
+          L.newEvent({ verb: "brush_teeth", skill: "body",
+                       grants: { "core:xp": 10, "core:embers": 10, "skill:body": 1, "stat:spd": 1 } }),
+          L.newEvent({ verb: "shower", skill: "body",
+                       grants: { "core:xp": 40, "core:embers": 40, "skill:body": 3, "stat:str": 3 } })
+        ];
+        eq(JSON.stringify(Stats.build(evs, { ledger: L })),
+           JSON.stringify(Stats.build(evs, { ledger: L })),
+           "the same ledger produced two different stat sheets");
+      });
+
+      t("stats: a total never falls as more events are added, retraction included", function () {
+        const first = L.newEvent({ verb: "shower", skill: "body",
+          grants: { "core:xp": 40, "core:embers": 40, "skill:body": 3, "stat:str": 3 } });
+        const before = Stats.build([first], { ledger: L });
+        const more = [first, L.newEvent({ verb: "cooked_a_meal", skill: "kitchen",
+          grants: { "core:xp": 25, "core:embers": 25, "skill:kitchen": 2, "stat:vit": 2 } })];
+        const after = Stats.build(more, { ledger: L });
+        Stats.STATS.forEach((s) =>
+          ok(after.points[s] >= before.points[s], `stat ${s} fell after an event was added`));
+
+        const retract = L.newEvent({ kind: "retract", subject: first.id, ts: L.nowIso() });
+        const withRetract = Stats.build(more.concat([retract]), { ledger: L });
+        Stats.STATS.forEach((s) =>
+          ok(withRetract.points[s] <= after.points[s],
+             `stat ${s} rose after retracting the event that fed it — nothing built is ever taken back applies the other way too: a retraction must never GAIN a stat, only leave one where it was`));
+      });
+
+      t("stats: the worked example — 146 points at level 30, 510 at level 100", function () {
+        /* ADR-024's mandatory worked example. Any mix of actions produces
+         * these totals once level and milestone counting are correct — the
+         * derived split always sums to exactly 4 and the milestone always
+         * adds exactly 6, so this is the arithmetic check the off-by-one
+         * bugs above would otherwise hide. */
+        const cycle = catalog.actions.filter((a) => !a.written_by && !a.retired);
+        ok(cycle.length > 0, "no tappable actions to build a fixture from");
+        const grantsFor = (a) => {
+          const tier = catalog.tiers[a.tier];
+          const g = Object.assign({}, tier.grants);
+          g["skill:" + a.skill] = tier.skill_points;
+          g["stat:" + a.stat] = tier.skill_points;
+          return g;
+        };
+        function cumulativeXpFor(level) {
+          let sum = 0;
+          for (let n = 1; n < level; n++) sum += L.characterCost(n);
+          return sum;
+        }
+        function ledgerReaching(level) {
+          const target = cumulativeXpFor(level);
+          const events = [];
+          let xp = 0, i = 0;
+          while (xp < target) {
+            const a = cycle[i % cycle.length]; i++;
+            const ev = L.newEvent({ verb: a.verb, skill: a.skill, grants: grantsFor(a) });
+            events.push(ev);
+            xp += ev.grants["core:xp"];
+          }
+          return events;
+        }
+        const at30 = Stats.build(ledgerReaching(30), { ledger: L });
+        eq(at30.level, 30, `fixture landed on level ${at30.level}, not 30`);
+        eq(at30.totalPoints, 146, "level 30 should hold exactly 146 stat points");
+
+        const at100 = Stats.build(ledgerReaching(100), { ledger: L });
+        eq(at100.level, 100, `fixture landed on level ${at100.level}, not 100`);
+        eq(at100.totalPoints, 510, "level 100 should hold exactly 510 stat points");
+      });
+    }
+
     return results;
   }
 
-  function run(L, catalog, currencies, C, S, shop) {
-    const results = makeSuite(L, catalog, currencies, C, S, shop);
+  function run(L, catalog, currencies, C, S, shop, Stats) {
+    const results = makeSuite(L, catalog, currencies, C, S, shop, Stats);
     return {
       results: results,
       passed: results.filter((r) => r.ok).length,
@@ -821,10 +954,11 @@ if (typeof module === "object" && require.main === module) {
   const L = require(path.join(here, "ledger.js"));
   const C = require(path.join(here, "character.js"));
   const S = require(path.join(here, "shop.js"));
+  const Stats = require(path.join(here, "stats.js"));
   const catalog = JSON.parse(fs.readFileSync(path.join(here, "catalog.json"), "utf8"));
   const currencies = JSON.parse(fs.readFileSync(path.join(here, "currencies.json"), "utf8"));
   const shop = JSON.parse(fs.readFileSync(path.join(here, "shop.json"), "utf8"));
-  const out = module.exports.run(L, catalog, currencies, C, S, shop);
+  const out = module.exports.run(L, catalog, currencies, C, S, shop, Stats);
   out.results.forEach((r) =>
     console.log((r.ok ? "  PASS  " : "  FAIL  ") + r.name + (r.ok ? "" : "\n          " + r.msg)));
   console.log(`\n${out.passed} passed, ${out.failed} failed`);

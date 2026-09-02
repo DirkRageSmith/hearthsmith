@@ -592,3 +592,78 @@ reads, and an undocumented park becomes an abandonment.*
 > a local branch, `bellows/stat-layer`, on top of the commit `main` was at when this pass
 > started. `main` is untouched. `dirkragesmith.github.io/hearthsmith/ledger.js` keeps
 > reporting `hearthsmith@0.8.0` until this is reviewed and merged.
+>
+> **2026-09-02 — slice 1.5 REVIEWED and merged.** `hearthsmith@0.9.0` live. Checked by
+> probing rather than reading: the ADR-024 worked example reproduces exactly (146 points at
+> level 30, 510 at level 100); `levelFor()` was correctly left alone with
+> `characterLevelFor()` added beside it; the sheet is pure (same ledger twice, identical
+> output); and after a retraction `core:xp` fell 1600 → 1560 while the character level and
+> all six stat totals held — the high-water rule surviving contact with the kind 1.4 added.
+> Nothing multiplies grants by a stat and no stat path mints Favor.
+>
+> **ECONOMY §6's prose was wrong and is now corrected.** It said the milestone lands "on
+> levels 5, 10, 15". It does not — `floor((L-1)/5)` increments at **6, 11, 16, 21**. Read
+> as `floor(L/5)` the totals come out 152 and 522 instead of the frozen 146 and 510. The
+> formula was never in doubt; where it lands was. Verified independently by solving for the
+> milestone count from ADR-024's own totals rather than trusting either the prose or the
+> pass that reported it.
+>
+> **A guard that was green while the thing it guards was false.** The doctor's `vendored
+> ledger` check compares two *working trees*. Both were sitting on an unreviewed feature
+> branch, so they genuinely matched and it said ok — while FitFlexr's live site served a
+> `ledger.js` from that branch and Hearthsmith's live site served the previous release. A
+> `git add -A` in FitFlexr had swept the re-vendored files into an unrelated commit and
+> pushed it to `gh-pages`. No user-visible breakage, but unreviewed code reached a live
+> site. **The check now names the ref it compared and warns when it is not `main`** — same
+> failure family as the CRLF shell hash: an answer that depends on incidental local state
+> rather than on the thing being asserted. Vendored files now also get their own commit.
+>
+> **2026-09-02 (0.10.0) — the aesthetic is frozen: 16-bit JRPG (ADR-030).** Matt's call —
+> Super Mario RPG, EarthBound, Final Fantasy Mystic Quest. What those three share is not
+> subject matter but four properties of *rendering*: hue-shifted shading (shadows toward
+> purple, highlights toward yellow — the biggest single lever), an outline that is never
+> pure black, high saturation with wide value steps, and the thick-bordered menu window.
+>
+> **Only the 26 palette values changed. Not one sprite.** All 91 grids index into the same
+> frozen letters, so the whole look moved by editing a colour table — `tiles.js`'s art seam
+> paying for itself the first time anyone leaned on it. `room.html` gained the frame (plum
+> outline, gold bevel, square corners) and **stopped following the OS theme** — required,
+> not preference: shop rows on a dark frame fill would have had light-mode dark-on-dark
+> text.
+>
+> **The IP line is written into ADR-030 explicitly.** Style is not protected; expression
+> is. Their sprites, characters, names, music, frames-as-drawn and text are permanently
+> out. The test: *could a reasonable person identify a specific game from this asset
+> alone?* If yes, it is out.
+>
+> **2026-09-02 (0.11.0) — EarthBound perspective and the moving background.** Matt narrowed
+> the direction; EarthBound is now primary and decides how the world is drawn.
+>
+> **The floor was the whole perspective problem, and the fix was 32 lines.** Through three
+> revisions it was horizontal boards running across the screen. **Horizontal boards are a
+> side view** — they describe a surface facing you, so the floor read as a second wall and
+> the furniture looked pasted onto it. The first two attempts fiddled with seam density
+> (brickwork, then panelling) because the symptom was read as *texture* when it was
+> *projection*. Square parquet with the grain rotating 90° per tile reads as horizontal
+> instead; alternating grain is what the eye uses to decide a surface is a floor.
+> EarthBound is **oblique, not isometric** — above the floor and in front of the wall at
+> once — which is why "pick one of the three" was never coherent, since SMRPG genuinely is
+> isometric.
+>
+> **The trippy background is an algorithm, which is why it is safe.** EarthBound's battle
+> backgrounds were two pattern layers warped per scanline by HDMA, drifting against each
+> other while the palette cycled. The *method* belongs to the medium; the patterns are
+> theirs and are not used. Rebuilt as two counter-drifting gradient fields under a slow hue
+> rotation, pure CSS — no image, no library, no shell file.
+>
+> **Its intensity is a harm-rules decision, not a default.** EarthBound put this in
+> *battle* — a moment, not a state. Full strength behind a page someone opens at 2am to
+> tick "brushed my teeth" would be hostile. So: quiet behind the room, **loud on the
+> character sheet**, which is this game's version of stopping to look at who you are.
+> `prefers-reduced-motion` keeps the colour and drops the movement — hiding it would hand
+> anyone with that preference a different app rather than a calmer one.
+>
+> **Not done, and not pretended otherwise:** a scrolling camera (a room larger than the
+> screen is a real feature, not polish), oblique tops on furniture (the other half of the
+> perspective read — this is slice 1.6), and any sprite pass toward "cutesy". The sprites
+> are simple; they are not charming yet.

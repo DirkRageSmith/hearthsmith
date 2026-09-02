@@ -667,3 +667,42 @@ reads, and an undocumented park becomes an abandonment.*
 > screen is a real feature, not polish), oblique tops on furniture (the other half of the
 > perspective read — this is slice 1.6), and any sprite pass toward "cutesy". The sprites
 > are simple; they are not charming yet.
+>
+> **2026-09-02 (0.12.0) — you are in the room.** The step from "an app with a picture of a
+> place" to "a place". Three pieces: a body that occupies a tile, movement that respects
+> what is already in the room, and **looking** — stand in front of a thing and get a
+> sentence about it. Tap to walk, tap what you're facing to look; arrow keys on a desktop.
+>
+> **The writing is the point.** All 26 items and the hearth carry an `examine` line, and
+> the voice rules are recorded in `shop.json` because they are product rules rather than
+> style: second person, present tense, notice something *specific*, and **never
+> congratulate the player for taking care of themselves.** Not once, not warmly, not as a
+> reward — being scored on self-care is what makes people put an app down (ADR-006,
+> ECONOMY §4), and *"you earned this!"* is that failure wearing a compliment. Usually the
+> second sentence does the work: the first says what the thing is, the second says what
+> changed because you have it.
+>
+> **THE ROOM WAS UNINHABITABLE AND NOBODY COULD HAVE KNOWN.** With everything bought, four
+> of the six floor rows were completely blocked — you were penned into a bottom strip and
+> could never reach the back wall or anything hanging on it, inside your own home. Nothing
+> was *wrong* with the data. The layout had been designed as a **picture**, where density
+> looked good, and it had never been asked to be somewhere a person stands.
+>
+> **The first fix was also wrong, and that is the more useful half.** Adding walkway rows
+> made every row individually clear — and left three parallel corridors with no way
+> between them, because each furniture band still spanned the full width. It passed the
+> obvious check ("is this row clear?") while the room was still three sealed strips. The
+> room is now 20 columns with gaps aligned at columns 9 and 19, and the test **floods the
+> floor from a corner** instead of inspecting rows, because **connectivity is the actual
+> rule and "each row is fine" is a proxy that was true of a broken room.** That is this
+> project's recurring failure — a check measuring something adjacent — in its sixth
+> costume.
+>
+> *The flood fill was verified against a constructed partition (18 tiles stranded when
+> sealed, 0 with one gap), because the obvious sabotage of the real room kept leaving a
+> corridor open and passing — a sabotage that silently no-ops looks exactly like a check
+> that works.*
+>
+> **75 tests, doctor HEALTHY at 13 checks.** Verified by playing it: walked the corridor
+> from the front of the room to the back wall and looked up at the picture, which was
+> impossible an hour earlier.

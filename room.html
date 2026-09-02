@@ -162,6 +162,7 @@
   .vacant{fill:#ffffff;fill-opacity:.045;stroke:#ffffff;stroke-opacity:.13;
           stroke-width:1;stroke-dasharray:3 3}
   .roomline{color:var(--dim);font-size:.8rem;text-align:center;padding:10px 12px;line-height:1.5}
+  .roomline b{color:var(--frame-trim);font-weight:600}
 
   .bal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
   .stat{background:var(--frame-fill);border:3px solid var(--frame-ink);
@@ -266,6 +267,7 @@
     SHOP = both[0]; CUR = both[1]; IDS = L.currencyIdSet(CUR);
     buildDefs();
     render();
+    bindControls();
   }).catch(function () {
     var b = $("boot"); b.hidden = false;
     b.innerHTML = "<b>Serve this folder over http to run it.</b><br>" +
@@ -335,6 +337,237 @@
     return n;
   }
 
+  /* ---- YOU, IN THE ROOM -------------------------------------------------
+   *
+   * The room stopped being a picture of a place and became a place, which is
+   * the whole difference between an app with an illustration and a game.
+   *
+   * Three pieces and no more: a body that occupies a tile, movement that
+   * respects what is already in the room, and LOOKING — stand in front of a
+   * thing, look at it, get a sentence about it. That last one is the point.
+   * Walking around an empty room is a tech demo; walking around a room that
+   * says something back is a game, and it is what the writing in shop.json's
+   * `examine` fields exists for.
+   *
+   * Deliberately NOT here: pathfinding (one step per input reads better at
+   * this size and cannot strand you), diagonal movement, animation smoothing
+   * between tiles, and any notion of time passing. Nothing in this room ticks.
+   */
+  var TILE_MS = 130;                 // how long a step takes to read as a step
+  var you = null;                    // {x, y, dir, frame, moving}
+  var blocked = null;                // Set of "x,y" occupied by furniture
+  var dialogue = null;               // the line currently on screen, or null
+
+  var DIRS = {
+    up:    [0, -1], down:  [0, 1],
+    left:  [-1, 0], right: [1, 0]
+  };
+
+  /* Where you stand when the room first opens: on the floor, in front of the
+   * hearth, facing it. You arrive looking at the one thing that was always
+   * here. */
+  function spawnYou() {
+    var room = SHOP.room;
+    var fire = (room.fixtures || [])[0];
+    var x = fire ? fire.cell[0] + Math.floor(fire.size[0] / 2) : Math.floor(room.cols / 2);
+    var y = room.rows - 2;
+    you = { x: x, y: y, dir: "up", frame: 0, moving: false };
+    if (isBlocked(x, y)) {            // something was bought into the spawn
+      var free = firstFreeFloorCell();
+      if (free) { you.x = free[0]; you.y = free[1]; }
+    }
+  }
+
+  function firstFreeFloorCell() {
+    var room = SHOP.room;
+    for (var y = room.rows - 1; y >= room.wall_rows; y--) {
+      for (var x = 0; x < room.cols; x++) if (!isBlocked(x, y)) return [x, y];
+    }
+    return null;
+  }
+
+  /* What you cannot walk through. Rebuilt from the ledger on every render, so
+   * buying a wardrobe makes the wardrobe solid immediately and without anyone
+   * having to remember to update a second list. Rugs and mats are on the floor
+   * LAYER and you walk over them, which is what a rug is for. */
+  function rebuildBlocked(events) {
+    blocked = Object.create(null);
+    S.placed(events, SHOP).forEach(function (p) {
+      var it = p.item;
+      if (it.layer === "rug") return;            // walk on it
+      if (it.layer === "wall") return;           // it is not on the floor
+      var c = it.cell, s = it.size || [1, 1];
+      for (var x = c[0]; x < c[0] + s[0]; x++) {
+        for (var y = c[1]; y < c[1] + s[1]; y++) blocked[x + "," + y] = it;
+      }
+    });
+  }
+
+  function isBlocked(x, y) {
+    var room = SHOP.room;
+    if (x < 0 || y < 0 || x >= room.cols || y >= room.rows) return true;
+    if (y < room.wall_rows) return true;         // the wall is not floor
+    return !!blocked[x + "," + y];
+  }
+
+  /* What you are facing, whether or not you can walk into it. Wall items are
+   * looked at from the floor tile directly below them, which is why this
+   * checks the wall band separately rather than treating it as out of bounds. */
+  function facing() {
+    var d = DIRS[you.dir], tx = you.x + d[0], ty = you.y + d[1];
+    var hit = blocked[tx + "," + ty];
+    if (hit) return { kind: "item", item: hit };
+
+    var room = SHOP.room;
+    if (ty < room.wall_rows) {
+      /* Looking at the wall: find a wall-layer item whose footprint covers the
+       * column you are facing, at any height. You look UP at a picture; you do
+       * not have to be level with it. */
+      var owned = S.placed(L.read(), SHOP).filter(function (p) {
+        return p.item.layer === "wall";
+      });
+      for (var i = 0; i < owned.length; i++) {
+        var it = owned[i].item, c = it.cell, s = it.size || [1, 1];
+        if (tx >= c[0] && tx < c[0] + s[0]) return { kind: "item", item: it };
+      }
+      return { kind: "wall" };
+    }
+    if (tx < 0 || tx >= room.cols || ty >= room.rows) return { kind: "nothing" };
+    return { kind: "floor" };
+  }
+
+  function look() {
+    if (dialogue) { dialogue = null; render(); return; }   // tap again to close
+    var f = facing();
+    var amb = (SHOP.room.ambient || {});
+    if (f.kind === "item") {
+      dialogue = { title: f.item.label || null, text: f.item.examine || amb.nothing || "" };
+    } else {
+      dialogue = { title: null, text: amb[f.kind] || amb.nothing || "" };
+    }
+    render();
+  }
+
+  function step(dir) {
+    if (!you || you.moving) return;
+    if (dialogue) { dialogue = null; }        // moving dismisses the box
+    /* Turning is free and does not cost a step. Facing a wall to look at the
+     * picture on it should not require walking into the wall first. */
+    if (you.dir !== dir) { you.dir = dir; render(); }
+    var d = DIRS[dir], nx = you.x + d[0], ny = you.y + d[1];
+    if (isBlocked(nx, ny)) { render(); return; }
+    you.x = nx; you.y = ny;
+    you.frame = you.frame ? 0 : 1;
+    you.moving = true;
+    render();
+    setTimeout(function () { you.moving = false; }, TILE_MS);
+  }
+
+  function drawYou(g, tile) {
+    if (!you) return;
+    var side = you.dir === "left" || you.dir === "right";
+    var name = side ? "you_side_" : (you.dir === "up" ? "you_up_" : "you_down_");
+    name += (you.frame ? "b" : "a");
+
+    /* A contact shadow, same as the furniture gets. Without one you hover. */
+    g.appendChild(el("ellipse", {
+      cx: (you.x + 0.5) * tile, cy: (you.y + 1) * tile - 2,
+      rx: tile * 0.30, ry: tile * 0.15,
+      fill: "#000000", "fill-opacity": ".28"
+    }));
+
+    var u = el("use", {
+      href: "#t-" + name,
+      x: you.x * tile, y: you.y * tile,
+      width: tile, height: tile
+    });
+    /* Left is right, mirrored about the tile's own centre. One sprite, two
+       directions, and they can never drift apart. */
+    if (you.dir === "left") {
+      u.setAttribute("transform",
+        "translate(" + ((you.x * 2 + 1) * tile) + ",0) scale(-1,1)");
+      u.setAttribute("x", 0);
+      u.setAttribute("y", you.y * tile);
+    }
+    g.appendChild(u);
+  }
+
+  /* The dialogue box, drawn INSIDE the room's viewBox so it scales with the
+     room instead of floating over it in CSS pixels. Same frame language as the
+     menus: outline, gold bevel, dark fill. */
+  function drawDialogue(g, W, H, tile) {
+    if (!dialogue) return;
+    var boxH = tile * 3.2, y = H - boxH - tile * 0.4, x = tile * 0.4;
+    var w = W - tile * 0.8;
+    g.appendChild(el("rect", { x:x, y:y, width:w, height:boxH, fill:"#241a2e",
+      stroke:"#2d1b33", "stroke-width":3 }));
+    g.appendChild(el("rect", { x:x+2.5, y:y+2.5, width:w-5, height:boxH-5,
+      fill:"none", stroke:"#f5c542", "stroke-width":2 }));
+
+    var lines = wrapText(dialogue.text, 46);
+    var ty = y + tile * 0.85;
+    if (dialogue.title) {
+      var t = el("text", { x:x+tile*0.5, y:ty, fill:"#f5c542",
+        "font-family":"ui-rounded,system-ui,sans-serif", "font-size":tile*0.52,
+        "font-weight":"700" });
+      t.textContent = dialogue.title;
+      g.appendChild(t);
+      ty += tile * 0.62;
+    }
+    lines.slice(0, 3).forEach(function (line) {
+      var t = el("text", { x:x+tile*0.5, y:ty, fill:"#f6ecdc",
+        "font-family":"ui-rounded,system-ui,sans-serif", "font-size":tile*0.46 });
+      t.textContent = line;
+      g.appendChild(t);
+      ty += tile * 0.58;
+    });
+  }
+
+  function wrapText(s, per) {
+    var words = String(s || "").split(/\s+/), out = [], line = "";
+    words.forEach(function (word) {
+      if ((line + " " + word).trim().length > per) { out.push(line.trim()); line = word; }
+      else line = (line + " " + word).trim();
+    });
+    if (line) out.push(line);
+    return out;
+  }
+
+  /* Input. Keyboard for the desktop, and TAP-TO-STEP for the phone, which is
+     where this actually gets used — you tap a tile and take one step toward
+     it, or tap what you are already facing to look at it. No virtual d-pad:
+     a d-pad on a touchscreen is a small target you cannot feel, and this room
+     is sixteen tiles wide. */
+  function bindControls() {
+    document.addEventListener("keydown", function (e) {
+      var k = e.key;
+      var map = { ArrowUp:"up", ArrowDown:"down", ArrowLeft:"left", ArrowRight:"right",
+                  w:"up", s:"down", a:"left", d:"right",
+                  W:"up", S:"down", A:"left", D:"right" };
+      if (map[k]) { e.preventDefault(); step(map[k]); return; }
+      if (k === " " || k === "Enter") { e.preventDefault(); look(); }
+    });
+
+    $("roomsvg").addEventListener("click", function (e) {
+      if (!you) return;
+      var svg = $("roomsvg"), r = svg.getBoundingClientRect();
+      var room = SHOP.room, tile = room.tile;
+      var scale = r.width / (room.cols * tile);
+      var cx = Math.floor((e.clientX - r.left) / scale / tile);
+      var cy = Math.floor((e.clientY - r.top) / scale / tile);
+      if (dialogue) { dialogue = null; render(); return; }
+
+      var dx = cx - you.x, dy = cy - you.y;
+      if (dx === 0 && dy === 0) { look(); return; }
+      /* Tapping the tile you already face means "look at it". Tapping anywhere
+         else means "take one step that way". */
+      var d = DIRS[you.dir];
+      if (dx === d[0] && dy === d[1]) { look(); return; }
+      if (Math.abs(dx) > Math.abs(dy)) step(dx > 0 ? "right" : "left");
+      else step(dy > 0 ? "down" : "up");
+    });
+  }
+
   function drawRoom(events, totals) {
     var room = SHOP.room, tile = room.tile;
     var W = room.cols * tile, H = room.rows * tile;
@@ -362,6 +595,8 @@
     });
 
     /* Already in draw order: rugs, then wall, then floor back-to-front. */
+    rebuildBlocked(events);
+    if (!you) spawnYou();
     var here = S.placed(events, SHOP);
     here.forEach(function (p) {
       var it = p.item, c = it.cell, s = it.size;
@@ -399,16 +634,22 @@
         "pointer-events": "none"
       }));
     }
+    drawYou(g, tile);
     g.appendChild(el("rect", {
       x:0, y:0, width:W, height:H, fill:"url(#g-vignette)", "pointer-events":"none"
     }));
+    drawDialogue(g, W, H, tile);
 
     var built = here.filter(function (p) { return !p.fixture; }).length;
-    $("roomline").textContent = built === 0
+    /* The one instruction the room gets. It has to be here rather than in a
+       help screen nobody opens, and it has to be short enough to read once. */
+    var howto = "<b>Tap to walk</b> &middot; tap what you're facing to look at it";
+    $("roomline").innerHTML = (built === 0
       ? "The hearth is lit and the room is otherwise bare. Everything here is bought with Embers you already earned."
       : built === 1
         ? "The hearth, and one thing you built."
-        : "The hearth, and " + built + " things you built.";
+        : "The hearth, and " + built + " things you built.") +
+      "<br>" + howto;
     return built;
   }
 

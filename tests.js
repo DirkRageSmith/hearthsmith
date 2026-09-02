@@ -547,6 +547,66 @@
         ok(empty.every((p) => p.fixture), "an unowned item was drawn in an empty room");
       });
 
+      t("shop: the room stays WALKABLE however full it gets", function () {
+        /* A product rule as of 2026-09-02, when the room got a person in it.
+         *
+         * The original layout packed three furniture bands into consecutive
+         * rows. It looked right as a picture and was uninhabitable as a place:
+         * with everything bought, four of six floor rows were fully blocked,
+         * so you were penned into a bottom strip and could never reach the
+         * back wall — or anything hanging on it — inside your own room.
+         *
+         * The first fix added walkway rows and was ALSO wrong, in a way the
+         * obvious check missed: each furniture band still spanned the full
+         * width, so the walkways were parallel corridors with no way between
+         * them. Every row passed "is this row clear"; the room was still three
+         * sealed strips.
+         *
+         * So this floods the floor from a corner instead of inspecting rows.
+         * CONNECTIVITY is the actual rule — "each row is fine" is a proxy that
+         * happened to be true of a broken room, which is this project's
+         * recurring failure in yet another costume. */
+        const room = shop.room;
+        const occupied = new Set();
+        shop.items.concat(room.fixtures || []).forEach((i) => {
+          if (i.layer === "wall" || i.layer === "rug") return;  // over it, or under it
+          const [cx, cy] = i.cell, [w, h] = i.size;
+          for (let x = cx; x < cx + w; x++) {
+            for (let y = cy; y < cy + h; y++) occupied.add(x + "," + y);
+          }
+        });
+        const free = new Set();
+        for (let y = room.wall_rows; y < room.rows; y++) {
+          for (let x = 0; x < room.cols; x++) {
+            if (!occupied.has(x + "," + y)) free.add(x + "," + y);
+          }
+        }
+        ok(free.size > 0, "a fully furnished room has no floor left at all");
+
+        const start = [...free].sort()[0];
+        const seen = new Set([start]);
+        const queue = [start];
+        while (queue.length) {
+          const [x, y] = queue.shift().split(",").map(Number);
+          [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx, dy]) => {
+            const n = (x + dx) + "," + (y + dy);
+            if (free.has(n) && !seen.has(n)) { seen.add(n); queue.push(n); }
+          });
+        }
+        eq(seen.size, free.size,
+           `${free.size - seen.size} floor tiles are walled off from the rest of the room`);
+
+        /* And every wall item needs a reachable tile to be looked at from —
+         * you examine a picture by standing under it. */
+        shop.items.filter((i) => i.layer === "wall").forEach((i) => {
+          let any = false;
+          for (let x = i.cell[0]; x < i.cell[0] + i.size[0]; x++) {
+            if (seen.has(x + "," + room.wall_rows)) any = true;
+          }
+          ok(any, `${i.id} hangs where nobody can stand to look at it`);
+        });
+      });
+
       t("shop: the room leaves space to grow into", function () {
         const room = shop.room;
         ok(S.vacantCells([], shop).length > 0, "a new room offers nowhere to put anything");

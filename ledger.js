@@ -23,7 +23,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 1;
-  const SOURCE = "hearthsmith@0.11.0";
+  const SOURCE = "hearthsmith@0.12.0";
 
   /* THE LEDGER BELONGS TO THE PLAYER, NOT TO ONE GAME.
    *

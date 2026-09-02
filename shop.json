@@ -45,80 +45,601 @@
     "ART. Sprites are 16x16 pixel grids in tiles.js, which is the swap seam: a",
     "bought tileset (Kenney CC0, LimeZu Modern Interiors) replaces that one module",
     "with one returning spritesheet slices under the same names, and nothing here",
-    "changes. `sprite` is a name in that module, never a file path."
+    "changes. `sprite` is a name in that module, never a file path.",
+    "",
+    "EXAMINE TEXT. Every item carries one line, shown when you stand in front of it and look. The voice rules are in the scratchpad generator and worth restating here because they are product rules, not style preferences: second person, present tense, notice something SPECIFIC, and NEVER congratulate the player for taking care of themselves. Not once, not warmly, not as a reward. Being scored on self-care is the thing that makes people put an app down (ADR-006, ECONOMY section 4), and 'you earned this!' is that failure wearing a compliment. The second sentence usually does the work: the first says what the thing is, the second says what changed because you have it.",
+    "",
+    "LAYOUT: BANDS AND WALKWAYS. Furniture sits in three bands (rows 5-6, 8-9, 11-12) separated by walkable rows (4, 7, 10). Row 4 is the strip against the back wall, and it is what makes wall items reachable at all - you examine a picture by standing under it and looking up.",
+    "This was NOT the original layout, and the reason is worth keeping. The first version packed three bands into rows 4-9 with no gaps, which looked correct as a PICTURE and was uninhabitable the moment a walkable character existed: rows 4 through 7 were entirely blocked, so you were trapped in a bottom strip and could never reach the wall or the back half of your own room. Nothing was wrong with the data - the room had simply never been asked to be a place you stand in. tests.js now mechanises it."
   ],
   "version": 2,
   "room": {
     "id": "home:main",
     "label": "The main room",
-    "cols": 16,
-    "rows": 10,
+    "cols": 20,
+    "rows": 13,
     "tile": 16,
     "wall_rows": 4,
     "wainscot_row": 3,
     "fixtures": [
-      { "id": "hearth", "sprite": "hearth", "cell": [6, 4], "size": [2, 2], "layer": "floor",
-        "note": "Never bought, never lost. The room is never empty on day one." }
+      {
+        "id": "hearth",
+        "sprite": "hearth",
+        "cell": [
+          7,
+          5
+        ],
+        "size": [
+          2,
+          2
+        ],
+        "layer": "floor",
+        "note": "Never bought, never lost. The room is never empty on day one.",
+        "examine": "It was here before any of the rest of it, and it'll be here after. You don't have to keep it lit. It just is."
+      }
+    ],
+    "ambient": {
+      "floor": "Bare floor. Room for something, when there's something to put there.",
+      "wall": "The wall. Holding the roof up, which is more than most things manage.",
+      "nothing": "Nothing there."
+    },
+    "bands": [
+      5,
+      8,
+      11
+    ],
+    "walkways": [
+      4,
+      7,
+      10
     ]
   },
   "items": [
-    { "id": "home_rug_01",         "label": "A woven rug",                   "skill": "home",      "unlock_level": 1, "cost": { "core:embers": 900 },  "layer": "rug",   "cell": [0, 8],  "size": [2, 2], "sprite": "rug",
-      "blurb": "The floor stops being a floor." },
-    { "id": "community_door_01",   "label": "A door worth knocking on",      "skill": "community", "unlock_level": 1, "cost": { "core:embers": 900 },  "layer": "wall",  "cell": [0, 0],  "size": [3, 4], "sprite": "door",
-      "blurb": "Someone could arrive at it." },
-    { "id": "kitchen_stove_01",    "label": "A stove that works",            "skill": "kitchen",   "unlock_level": 1, "cost": { "core:embers": 950 },  "layer": "floor", "cell": [2, 4],  "size": [2, 2], "sprite": "stove",
-      "blurb": "Both rings, every time." },
-    { "id": "craft_desk_01",       "label": "A desk of your own",            "skill": "craft",     "unlock_level": 1, "cost": { "core:embers": 950 },  "layer": "floor", "cell": [6, 6],  "size": [2, 2], "sprite": "desk",
-      "blurb": "You can leave things half-finished on it." },
-    { "id": "home_plant_01",       "label": "Something green",               "skill": "home",      "unlock_level": 1, "cost": { "core:embers": 950 },  "layer": "floor", "cell": [2, 8],  "size": [2, 2], "sprite": "plant",
-      "blurb": "It only needs you about once a week." },
-    { "id": "body_bed_01",         "label": "A bed worth getting into",      "skill": "body",      "unlock_level": 1, "cost": { "core:embers": 1000 }, "layer": "floor", "cell": [0, 6],  "size": [2, 2], "sprite": "bed",
-      "blurb": "And, on the bad days, worth getting out of." },
-
-    { "id": "community_mat_01",    "label": "A mat at the door",             "skill": "community", "unlock_level": 2, "cost": { "core:embers": 1100 }, "layer": "rug",   "cell": [4, 8],  "size": [2, 2], "sprite": "mat",
-      "blurb": "The bit that says someone lives here." },
-    { "id": "body_nightstand_01",  "label": "A nightstand and a lamp",       "skill": "body",      "unlock_level": 2, "cost": { "core:embers": 1200 }, "layer": "floor", "cell": [2, 6],  "size": [2, 2], "sprite": "nightstand",
-      "blurb": "Somewhere for the water glass and the pills." },
-    { "id": "home_sconce_01",      "label": "A lamp on the wall",            "skill": "home",      "unlock_level": 2, "cost": { "core:embers": 1300 }, "layer": "wall",  "cell": [3, 1],  "size": [1, 2], "sprite": "sconce",
-      "blurb": "Warmer than the overhead light, and kinder at night." },
-    { "id": "craft_picture_01",    "label": "Something on the wall",         "skill": "craft",     "unlock_level": 2, "cost": { "core:embers": 1400 }, "layer": "wall",  "cell": [7, 1],  "size": [2, 2], "sprite": "picture",
-      "blurb": "You chose it. That is the whole point of it." },
-    { "id": "kitchen_sink_01",     "label": "A sink with hot water",         "skill": "kitchen",   "unlock_level": 2, "cost": { "core:embers": 1500 }, "layer": "floor", "cell": [0, 4],  "size": [2, 2], "sprite": "sink",
-      "blurb": "Dishes stop being a project." },
-
-    { "id": "home_shelf_01",       "label": "A shelf for your things",       "skill": "home",      "unlock_level": 3, "cost": { "core:embers": 1800 }, "layer": "wall",  "cell": [9, 1],  "size": [3, 2], "sprite": "shelf",
-      "blurb": "Everything gets a place that is its own." },
-    { "id": "kitchen_table_01",    "label": "A table to eat at",             "skill": "kitchen",   "unlock_level": 3, "cost": { "core:embers": 2000 }, "layer": "floor", "cell": [4, 6],  "size": [2, 2], "sprite": "table",
-      "blurb": "Sitting down to it is the whole point." },
-    { "id": "community_chair_01",  "label": "A chair for someone else",      "skill": "community", "unlock_level": 3, "cost": { "core:embers": 2200 }, "layer": "floor", "cell": [14, 6], "size": [2, 2], "sprite": "guestchair",
-      "blurb": "It can stay empty. It is still theirs." },
-
-    { "id": "home_clock_01",       "label": "A clock that ticks",            "skill": "home",      "unlock_level": 4, "cost": { "core:embers": 2400 }, "layer": "wall",  "cell": [15, 1], "size": [1, 2], "sprite": "clock",
-      "blurb": "Quiet rooms are better with one sound in them." },
-    { "id": "home_armchair_01",    "label": "An armchair by the fire",       "skill": "home",      "unlock_level": 4, "cost": { "core:embers": 2500 }, "layer": "floor", "cell": [12, 6], "size": [2, 2], "sprite": "armchair",
-      "blurb": "Facing the hearth, because of course it is." },
-    { "id": "body_window_01",      "label": "The window with morning light", "skill": "body",      "unlock_level": 4, "cost": { "core:embers": 2600 }, "layer": "wall",  "cell": [4, 1],  "size": [3, 2], "sprite": "window",
-      "blurb": "East-facing. It does most of the work." },
-    { "id": "craft_tools_01",      "label": "A rack of good tools",          "skill": "craft",     "unlock_level": 4, "cost": { "core:embers": 2800 }, "layer": "floor", "cell": [14, 4], "size": [2, 2], "sprite": "toolrack",
-      "blurb": "Sharp, hung up, and where you left them." },
-
-    { "id": "home_curtains_01",    "label": "Curtains that actually close",  "skill": "home",      "unlock_level": 5, "cost": { "core:embers": 3200 }, "layer": "wall",  "cell": [13, 0], "size": [2, 3], "sprite": "curtains",
-      "blurb": "You decide when it is morning." },
-    { "id": "craft_bookshelf_01",  "label": "A shelf of books",              "skill": "craft",     "unlock_level": 5, "cost": { "core:embers": 3300 }, "layer": "floor", "cell": [12, 4], "size": [2, 2], "sprite": "bookshelf",
-      "blurb": "Some of them you have even read." },
-    { "id": "kitchen_pantry_01",   "label": "A stocked pantry",              "skill": "kitchen",   "unlock_level": 5, "cost": { "core:embers": 3400 }, "layer": "floor", "cell": [8, 4],  "size": [2, 2], "sprite": "pantry",
-      "blurb": "There is always something in it." },
-
-    { "id": "home_sconce_02",      "label": "A second lamp",                 "skill": "home",      "unlock_level": 6, "cost": { "core:embers": 3600 }, "layer": "wall",  "cell": [12, 1], "size": [1, 2], "sprite": "sconce",
-      "blurb": "Now the corners are lit too." },
-    { "id": "kitchen_counter_01",  "label": "Counter you can work on",       "skill": "kitchen",   "unlock_level": 6, "cost": { "core:embers": 3900 }, "layer": "floor", "cell": [4, 4],  "size": [2, 2], "sprite": "counter",
-      "blurb": "Room to put the board down and actually cook." },
-    { "id": "body_wardrobe_01",    "label": "A wardrobe",                    "skill": "body",      "unlock_level": 6, "cost": { "core:embers": 4200 }, "layer": "floor", "cell": [10, 4], "size": [2, 2], "sprite": "wardrobe",
-      "blurb": "Clean clothes live here, not on the chair." },
-
-    { "id": "craft_workbench_01",  "label": "A proper workbench",            "skill": "craft",     "unlock_level": 7, "cost": { "core:embers": 4600 }, "layer": "floor", "cell": [8, 6],  "size": [2, 2], "sprite": "workbench",
-      "blurb": "The vice alone changes what you can attempt." },
-    { "id": "home_sofa_01",        "label": "A sofa to sink into",           "skill": "home",      "unlock_level": 7, "cost": { "core:embers": 4800 }, "layer": "floor", "cell": [10, 6], "size": [2, 2], "sprite": "sofa",
-      "blurb": "Long enough to lie down on." }
+    {
+      "id": "home_rug_01",
+      "label": "A woven rug",
+      "skill": "home",
+      "unlock_level": 1,
+      "cost": {
+        "core:embers": 900
+      },
+      "layer": "rug",
+      "cell": [
+        0,
+        11
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "rug",
+      "blurb": "The floor stops being a floor.",
+      "examine": "Warm underfoot. You stop noticing it until you're barefoot, and then you're glad about it all over again."
+    },
+    {
+      "id": "community_door_01",
+      "label": "A door worth knocking on",
+      "skill": "community",
+      "unlock_level": 1,
+      "cost": {
+        "core:embers": 900
+      },
+      "layer": "wall",
+      "cell": [
+        0,
+        0
+      ],
+      "size": [
+        3,
+        4
+      ],
+      "sprite": "door",
+      "blurb": "Someone could arrive at it.",
+      "examine": "Solid. It makes a proper sound when someone knocks, and someone could."
+    },
+    {
+      "id": "kitchen_stove_01",
+      "label": "A stove that works",
+      "skill": "kitchen",
+      "unlock_level": 1,
+      "cost": {
+        "core:embers": 950
+      },
+      "layer": "floor",
+      "cell": [
+        2,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "stove",
+      "blurb": "Both rings, every time.",
+      "examine": "Both rings light. You still check twice, out of habit from the old one."
+    },
+    {
+      "id": "craft_desk_01",
+      "label": "A desk of your own",
+      "skill": "craft",
+      "unlock_level": 1,
+      "cost": {
+        "core:embers": 950
+      },
+      "layer": "floor",
+      "cell": [
+        7,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "desk",
+      "blurb": "You can leave things half-finished on it.",
+      "examine": "Something half-finished is sitting on it. That's allowed. That's what it's for."
+    },
+    {
+      "id": "home_plant_01",
+      "label": "Something green",
+      "skill": "home",
+      "unlock_level": 1,
+      "cost": {
+        "core:embers": 950
+      },
+      "layer": "floor",
+      "cell": [
+        3,
+        11
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "plant",
+      "blurb": "It only needs you about once a week.",
+      "examine": "Still alive. Neither of you is making a big deal about it."
+    },
+    {
+      "id": "body_bed_01",
+      "label": "A bed worth getting into",
+      "skill": "body",
+      "unlock_level": 1,
+      "cost": {
+        "core:embers": 1000
+      },
+      "layer": "floor",
+      "cell": [
+        0,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "bed",
+      "blurb": "And, on the bad days, worth getting out of.",
+      "examine": "Made this morning. Still made. A whole day of it just being nice to come back to."
+    },
+    {
+      "id": "community_mat_01",
+      "label": "A mat at the door",
+      "skill": "community",
+      "unlock_level": 2,
+      "cost": {
+        "core:embers": 1100
+      },
+      "layer": "rug",
+      "cell": [
+        6,
+        11
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "mat",
+      "blurb": "The bit that says someone lives here.",
+      "examine": "It says someone lives here. That's the entire job and it does it."
+    },
+    {
+      "id": "body_nightstand_01",
+      "label": "A nightstand and a lamp",
+      "skill": "body",
+      "unlock_level": 2,
+      "cost": {
+        "core:embers": 1200
+      },
+      "layer": "floor",
+      "cell": [
+        2,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "nightstand",
+      "blurb": "Somewhere for the water glass and the pills.",
+      "examine": "The glass of water, the pills, the lamp. Everything you need at 3am, without standing up."
+    },
+    {
+      "id": "home_sconce_01",
+      "label": "A lamp on the wall",
+      "skill": "home",
+      "unlock_level": 2,
+      "cost": {
+        "core:embers": 1300
+      },
+      "layer": "wall",
+      "cell": [
+        3,
+        1
+      ],
+      "size": [
+        1,
+        2
+      ],
+      "sprite": "sconce",
+      "blurb": "Warmer than the overhead light, and kinder at night.",
+      "examine": "Warmer than the ceiling light. The whole room is kinder under it."
+    },
+    {
+      "id": "craft_picture_01",
+      "label": "Something on the wall",
+      "skill": "craft",
+      "unlock_level": 2,
+      "cost": {
+        "core:embers": 1400
+      },
+      "layer": "wall",
+      "cell": [
+        11,
+        1
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "picture",
+      "blurb": "You chose it. That is the whole point of it.",
+      "examine": "You chose it. Nobody gave it to you and nobody expected it, which is most of why it's good."
+    },
+    {
+      "id": "kitchen_sink_01",
+      "label": "A sink with hot water",
+      "skill": "kitchen",
+      "unlock_level": 2,
+      "cost": {
+        "core:embers": 1500
+      },
+      "layer": "floor",
+      "cell": [
+        0,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "sink",
+      "blurb": "Dishes stop being a project.",
+      "examine": "Hot water, immediately. Dishes stopped being a project the day this arrived."
+    },
+    {
+      "id": "home_shelf_01",
+      "label": "A shelf for your things",
+      "skill": "home",
+      "unlock_level": 3,
+      "cost": {
+        "core:embers": 1800
+      },
+      "layer": "wall",
+      "cell": [
+        14,
+        1
+      ],
+      "size": [
+        3,
+        2
+      ],
+      "sprite": "shelf",
+      "blurb": "Everything gets a place that is its own.",
+      "examine": "Everything on it has a place. Nothing on it is a pile."
+    },
+    {
+      "id": "kitchen_table_01",
+      "label": "A table to eat at",
+      "skill": "kitchen",
+      "unlock_level": 3,
+      "cost": {
+        "core:embers": 2000
+      },
+      "layer": "floor",
+      "cell": [
+        5,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "table",
+      "blurb": "Sitting down to it is the whole point.",
+      "examine": "Not a desk. Not the couch. You sit down at it, and it turns out that matters."
+    },
+    {
+      "id": "community_chair_01",
+      "label": "A chair for someone else",
+      "skill": "community",
+      "unlock_level": 3,
+      "cost": {
+        "core:embers": 2200
+      },
+      "layer": "floor",
+      "cell": [
+        17,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "guestchair",
+      "blurb": "It can stay empty. It is still theirs.",
+      "examine": "Empty today. It's still theirs. That isn't sad, it's just true."
+    },
+    {
+      "id": "home_clock_01",
+      "label": "A clock that ticks",
+      "skill": "home",
+      "unlock_level": 4,
+      "cost": {
+        "core:embers": 2400
+      },
+      "layer": "wall",
+      "cell": [
+        9,
+        1
+      ],
+      "size": [
+        1,
+        2
+      ],
+      "sprite": "clock",
+      "blurb": "Quiet rooms are better with one sound in them.",
+      "examine": "Quiet rooms are better with one sound in them."
+    },
+    {
+      "id": "home_armchair_01",
+      "label": "An armchair by the fire",
+      "skill": "home",
+      "unlock_level": 4,
+      "cost": {
+        "core:embers": 2500
+      },
+      "layer": "floor",
+      "cell": [
+        15,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "armchair",
+      "blurb": "Facing the hearth, because of course it is.",
+      "examine": "Facing the hearth, because of course it is."
+    },
+    {
+      "id": "body_window_01",
+      "label": "The window with morning light",
+      "skill": "body",
+      "unlock_level": 4,
+      "cost": {
+        "core:embers": 2600
+      },
+      "layer": "wall",
+      "cell": [
+        5,
+        1
+      ],
+      "size": [
+        3,
+        2
+      ],
+      "sprite": "window",
+      "blurb": "East-facing. It does most of the work.",
+      "examine": "East-facing. It does most of the work before you're awake enough to help."
+    },
+    {
+      "id": "craft_tools_01",
+      "label": "A rack of good tools",
+      "skill": "craft",
+      "unlock_level": 4,
+      "cost": {
+        "core:embers": 2800
+      },
+      "layer": "floor",
+      "cell": [
+        17,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "toolrack",
+      "blurb": "Sharp, hung up, and where you left them.",
+      "examine": "Sharp, hung up, and exactly where you left them. The last part is the luxury."
+    },
+    {
+      "id": "home_curtains_01",
+      "label": "Curtains that actually close",
+      "skill": "home",
+      "unlock_level": 5,
+      "cost": {
+        "core:embers": 3200
+      },
+      "layer": "wall",
+      "cell": [
+        18,
+        0
+      ],
+      "size": [
+        2,
+        3
+      ],
+      "sprite": "curtains",
+      "blurb": "You decide when it is morning.",
+      "examine": "Heavy, and they close all the way. You decide when it's morning now."
+    },
+    {
+      "id": "craft_bookshelf_01",
+      "label": "A shelf of books",
+      "skill": "craft",
+      "unlock_level": 5,
+      "cost": {
+        "core:embers": 3300
+      },
+      "layer": "floor",
+      "cell": [
+        15,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "bookshelf",
+      "blurb": "Some of them you have even read.",
+      "examine": "Some of them you've read. The rest are a promise you're allowed to keep slowly."
+    },
+    {
+      "id": "kitchen_pantry_01",
+      "label": "A stocked pantry",
+      "skill": "kitchen",
+      "unlock_level": 5,
+      "cost": {
+        "core:embers": 3400
+      },
+      "layer": "floor",
+      "cell": [
+        10,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "pantry",
+      "blurb": "There is always something in it.",
+      "examine": "There's always something in it. You stopped having to think about that, which was the point."
+    },
+    {
+      "id": "home_sconce_02",
+      "label": "A second lamp",
+      "skill": "home",
+      "unlock_level": 6,
+      "cost": {
+        "core:embers": 3600
+      },
+      "layer": "wall",
+      "cell": [
+        17,
+        1
+      ],
+      "size": [
+        1,
+        2
+      ],
+      "sprite": "sconce",
+      "blurb": "Now the corners are lit too.",
+      "examine": "The corners are lit now. Rooms feel bigger when nothing in them is dark."
+    },
+    {
+      "id": "kitchen_counter_01",
+      "label": "Counter you can work on",
+      "skill": "kitchen",
+      "unlock_level": 6,
+      "cost": {
+        "core:embers": 3900
+      },
+      "layer": "floor",
+      "cell": [
+        4,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "counter",
+      "blurb": "Room to put the board down and actually cook.",
+      "examine": "Room to put the board down. Cooking got easier the day you stopped balancing things."
+    },
+    {
+      "id": "body_wardrobe_01",
+      "label": "A wardrobe",
+      "skill": "body",
+      "unlock_level": 6,
+      "cost": {
+        "core:embers": 4200
+      },
+      "layer": "floor",
+      "cell": [
+        12,
+        5
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "wardrobe",
+      "blurb": "Clean clothes live here, not on the chair.",
+      "examine": "Clean clothes live in here now. Not on the chair. The chair is free."
+    },
+    {
+      "id": "craft_workbench_01",
+      "label": "A proper workbench",
+      "skill": "craft",
+      "unlock_level": 7,
+      "cost": {
+        "core:embers": 4600
+      },
+      "layer": "floor",
+      "cell": [
+        10,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "workbench",
+      "blurb": "The vice alone changes what you can attempt.",
+      "examine": "The vice alone changed what you're willing to attempt."
+    },
+    {
+      "id": "home_sofa_01",
+      "label": "A sofa to sink into",
+      "skill": "home",
+      "unlock_level": 7,
+      "cost": {
+        "core:embers": 4800
+      },
+      "layer": "floor",
+      "cell": [
+        12,
+        8
+      ],
+      "size": [
+        2,
+        2
+      ],
+      "sprite": "sofa",
+      "blurb": "Long enough to lie down on.",
+      "examine": "Long enough to lie down on. That was the whole requirement and it was the right one."
+    }
   ]
 }

@@ -201,9 +201,13 @@
       }
     });
     const free = [];
-    /* Only whole 2x2 furniture footprints on the floor are offered as vacant —
-     * a grid of 1x1 dashes would read as graph paper, not as a room. */
-    for (let y = room.wall_rows; y + 1 < room.rows; y += 2) {
+    /* Only whole 2x2 furniture footprints, and only on the BANDS — the rows
+     * furniture is allowed to occupy. The walkways between them are floor you
+     * stand on, and offering them as slots would let the room be furnished
+     * into a state you cannot walk through, which is exactly the bug that
+     * putting a person in the room exposed. */
+    const bands = room.bands || [room.wall_rows];
+    for (const y of bands) {
       for (let x = 0; x + 1 < room.cols; x += 2) {
         if (!taken[x + "," + y] && !taken[(x + 1) + "," + y] &&
             !taken[x + "," + (y + 1)] && !taken[(x + 1) + "," + (y + 1)]) {

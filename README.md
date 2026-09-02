@@ -490,3 +490,45 @@ reads, and an undocumented park becomes an abandonment.*
 > `git -C hearthsmith diff main..bellows/hold-to-retract`, then merge and push when ready
 > — nothing reaches the live site, and `ledger.js` keeps reporting `hearthsmith@0.6.0` at
 > `dirkragesmith.github.io`, until that push happens.
+>
+> **2026-09-02 — slice 1.4 REVIEWED, merged and shipped.** `hearthsmith@0.7.0` is live.
+>
+> The build itself was done on 2026-09-01 on a `bellows/` branch and deliberately left
+> unmerged, with review named as an explicit precondition for slice 1.5. **That was the
+> right call** — the review found two real bugs, both in behaviour no test covered.
+>
+> 1. **Retraction was not idempotent, and `core:xp` went negative (−10).** Retracting the
+>    same event twice subtracted twice. `currencies.json` makes exactly one promise about
+>    XP — *only ever goes up, never spent, never lost* — and a negative number is strictly
+>    worse than a falling one. **The input is not exotic: ADR-023's whole value is that two
+>    ledgers merge by union by `id`, and that only holds if every `kind` is idempotent
+>    under union.** Two devices each correcting the same mis-tap produce exactly this.
+>    Not reachable through the UI (a retracted entry is hidden, so it cannot be held
+>    twice) — reachable through the *merge*, which is worse, because nobody watches that
+>    path. Now ECONOMY §2.8 rule 5.
+> 2. **The window was keyed on `ts`, so a backfilled action could not be corrected.**
+>    ADR-027 says *"logged today"*; backfill writes `ts`=yesterday with `logged_at`=today,
+>    so the window excluded the likeliest mis-tap there is. Now on `logged_at`. An action
+>    both logged *and* dated yesterday is still closed.
+>
+> **The test that should have caught #2 passed throughout.** It backdated only `ts`, so it
+> was really asserting that an action backfilled minutes ago is closed — testing the wrong
+> property to reach the right-looking result. **Fifth instance of the one failure mode this
+> project keeps hitting:** a check that looks right and measures something adjacent
+> (ADR-020, ADR-028, ADR-029, the floor tiles, this).
+>
+> Three tests added, watched failing first; both fixes then re-broken and watched failing
+> again. The hold tooltip changed from *"for a mis-tap, not for a bad day"* to **"Hold to
+> undo a mis-tap"** — the first is true of the design and wrong as shipped copy, because it
+> tells someone their reason for correcting their own log is being judged.
+>
+> **65 tests, doctor HEALTHY at 12 checks.** Verified in a browser rather than reasoned
+> about: held a backfilled entry, it left the list, XP went 85 → 60, the Home level stayed
+> at 1, all seven `earn` events were still on disk with one `retract` appended, and a
+> refresh agreed. No "corrected", "correction" or "mistake" appears anywhere on the page.
+>
+> **A process note worth keeping.** `hearthsmith` is a separate repo *and* this work was on
+> a branch, so `git push origin main` reported **"Everything up-to-date"** while the slice
+> sat unshipped — `main` really was current; `HEAD` was somewhere else. **"Up-to-date" is
+> not the same claim as "your work is live."** Check `git branch --show-current` before
+> believing a push, and check the live asset after.

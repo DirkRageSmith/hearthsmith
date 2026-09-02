@@ -447,3 +447,46 @@ reads, and an undocumented park becomes an abandonment.*
 > **Still not verified: the service worker**, unchanged from 0.5.0. The in-app test
 > browser refuses to register one; the file serves 200 as `text/javascript`. First
 > thing to check on the phone.
+
+> **2026-09-01 (slice 1.4 — DONE, unpushed) — hold to retract.** `hearthsmith@0.7.0`.
+> Built by an unattended Bellows pass, following ADR-027 / ECONOMY.md §2.8 exactly — no
+> design decisions in this one, only implementation, which is why a pass could do it.
+>
+> - **A new event kind, `"retract"`, carrying `subject` (the id it corrects) and nothing
+>   else.** `ledger.js` stays append-only; nothing is edited or deleted.
+> - **`balances()` now looks up a retraction's subject and subtracts its `grants`.** A
+>   dangling subject (not in this ledger) subtracts nothing and does not throw.
+>   **`core:embers` floors at zero** — a retraction can shrink an already-spent balance
+>   down to the floor, never below it, and never claws back what was bought.
+> - **`highWaterBalances()` is new**: replays events in `id` order and tracks the peak
+>   each currency's running total ever reached. Skill levels, calling, and standings all
+>   read this instead of the live balance, so **a same-day correction can never take back
+>   a level, a calling, or a title already earned** — only the raw XP/Embers counters (an
+>   honest record, not a trophy) actually move. `shop.js`'s unlock gate reads the same
+>   high-water value, so nothing already unlocked can re-lock itself mid-purchase.
+> - **`visibleEvents()` is new**: a retraction and whatever it retracted are never shown
+>   as themselves. The main page's log, today's count, this month's day count, the hearth's
+>   warmth, and the character sheet's action/day/most-logged tallies all read this instead
+>   of the raw ledger — a corrected mis-tap does not linger anywhere as a phantom entry.
+> - **Hold, don't tap, and only today's own actions** — a purchase in the room can't be
+>   held from the main page. ~650ms via `pointerdown`/`pointermove`/`pointerup`, cancelled
+>   on a 10px drift so a scroll never fires it by accident. `L.canRetract()` is the actual
+>   rule (today's local day only, ECONOMY §2.8's whole design); the UI only decides which
+>   entries get the affordance, and it is checked again at the moment of retraction.
+> - **13 new tests, 62 total, doctor HEALTHY at 12 checks.** Each guard was watched
+>   failing before the code that makes it pass existed — `KNOWN_KINDS`, `balances()`,
+>   `canRetract()`, the high-water skill level, and the standing-never-lost case all ran
+>   red first. One real bug caught by this: the first version of the high-water tests
+>   built several events in the same tick, and a ULID only sorts by time to millisecond
+>   resolution — same-millisecond events don't reliably sort in creation order. Fixed in
+>   the *test* (explicit, strictly-increasing ids), not in `highWaterBalances()`: real
+>   usage never collides like that — a hold gesture alone takes hundreds of ms.
+>
+> **Unpushed, on purpose.** `hearthsmith` is a public repo and an unattended pass may
+> never push to one (the rope is enforced by the wrapper, not by instruction). Everything
+> above is committed on a local branch, `bellows/hold-to-retract`, sitting on top of the
+> commit `main` was at when the pass started. `main` itself is untouched. Review with
+> `git -C hearthsmith log main..bellows/hold-to-retract` and
+> `git -C hearthsmith diff main..bellows/hold-to-retract`, then merge and push when ready
+> — nothing reaches the live site, and `ledger.js` keeps reporting `hearthsmith@0.6.0` at
+> `dirkragesmith.github.io`, until that push happens.

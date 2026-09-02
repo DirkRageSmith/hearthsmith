@@ -579,6 +579,132 @@
       });
     }
 
+    /* ---- 12. retract (ADR-027, ECONOMY.md §2.8) --------------------------
+     * Hold to retract: today's log only, a correction may never demote you,
+     * Embers floor at zero, and nothing already built is ever taken back. */
+    {
+      const YESTERDAY = "2020-01-01T09:00:00-07:00";
+      /* highWaterBalances() replays in `id` order, and a ULID only sorts by
+       * time to millisecond resolution (ECONOMY §2's own description). Tests
+       * that build several events in the same tick need an explicit, strictly
+       * increasing `ms` so replay order matches creation order — real usage
+       * never collides like this (a hold gesture is hundreds of ms), but a
+       * synchronous test loop reliably does. */
+      let seq = 0;
+      const earnEv = (xp, skill, pts, ts) => L.newEvent({
+        id: L.ulid(Date.now() + (seq++)),
+        verb: "brush_teeth", skill: skill || "body",
+        ts: ts || L.nowIso(),
+        grants: { "core:xp": xp, "core:embers": xp, ["skill:" + (skill || "body")]: pts || 0 }
+      });
+      const retractOf = (subjectEv, ts) => L.newEvent({
+        id: L.ulid(Date.now() + (seq++)),
+        kind: "retract", subject: subjectEv.id, ts: ts || L.nowIso(), meta: { reason: "test" }
+      });
+
+      t("retract: an event has the same shape in memory as it does on disk", function () {
+        const ev = retractOf(earnEv(10));
+        const back = L.deserialize(L.serialize([ev]))[0];
+        eq(Object.keys(ev).sort().join(","), Object.keys(back).sort().join(","),
+           "retract event changed shape when it was saved");
+      });
+
+      t("retract: a ledger holding one round-trips byte-identically", function () {
+        const earn = earnEv(10);
+        const events = [earn, retractOf(earn)];
+        const before = L.serialize(events);
+        eq(L.serialize(L.deserialize(before)), before, "round trip changed the bytes");
+      });
+
+      t("retract: is a known kind, not counted as written by a newer version", function () {
+        ok(L.KNOWN_KINDS.indexOf("retract") !== -1, "retract must be a known kind");
+        const earn = earnEv(10);
+        eq(L.countUnknownKinds([earn, retractOf(earn)]), 0, "retract was counted as unknown");
+      });
+
+      t("retract: balances() subtracts the referenced event's grants", function () {
+        const earn = earnEv(50);
+        const bal = L.balances([earn, retractOf(earn)]);
+        eq(bal["core:xp"], 0, "retracted xp still counted");
+        eq(bal["core:embers"], 0, "retracted embers still counted");
+      });
+
+      t("retract: a dangling subject subtracts nothing and does not throw", function () {
+        const events = [earnEv(50), L.newEvent({ kind: "retract", subject: "not-a-real-id" })];
+        let bal = null, threw = false;
+        try { bal = L.balances(events); } catch (e) { threw = true; }
+        ok(!threw, "balances() threw on a retraction with no matching subject");
+        eq(bal["core:xp"], 50, "a dangling retraction changed a balance it should not touch");
+      });
+
+      t("retract: canRetract refuses an event outside today's window", function () {
+        const old = earnEv(10, "body", 1, YESTERDAY);
+        ok(!L.canRetract([old], old.id).ok, "a retraction of yesterday was allowed");
+      });
+
+      t("retract: canRetract allows an event logged today", function () {
+        const fresh = earnEv(10);
+        ok(L.canRetract([fresh], fresh.id).ok, "a same-day retraction was refused");
+      });
+
+      t("retract: canRetract refuses an unknown subject", function () {
+        ok(!L.canRetract([], "nope").ok, "a retraction of a nonexistent event was allowed");
+      });
+
+      if (S && shop) {
+        const cheapest = shop.items.slice().sort((a, b) =>
+          (a.cost["core:embers"] || 0) - (b.cost["core:embers"] || 0))[0];
+
+        t("retract: Embers floor at zero; a spent purchase is never clawed back", function () {
+          const earn = earnEv(cheapest.cost["core:embers"], cheapest.skill, 400);
+          const events = [earn, S.buyEvent(L, cheapest), retractOf(earn)];
+          const bal = L.balances(events);
+          ok(bal["core:embers"] >= 0, "Embers fell below zero after a retraction");
+          eq(bal["core:embers"], 0, "Embers did not floor at exactly zero");
+          ok(S.owned(events).some((o) => o.item === cheapest.id),
+             "an owned item was taken back by retracting the earn that paid for it");
+        });
+
+        t("retract: S.owned() is unchanged by any retraction, even of the purchase itself", function () {
+          const earn = earnEv(9999, cheapest.skill, 400);
+          const buy = S.buyEvent(L, cheapest);
+          const events = [earn, buy, retractOf(buy)];
+          ok(S.owned(events).some((o) => o.item === cheapest.id),
+             "retracting a purchase event removed ownership — nothing built is ever taken back");
+        });
+      }
+
+      if (C) {
+        t("retract: skill level is a high-water mark, never demoted", function () {
+          const many = [earnEv(10, "body", 2), earnEv(10, "body", 2), earnEv(10, "body", 2)];
+          const before = C.build(many, { ledger: L, catalog });
+          const beforeLevel = before.skills.find((s) => s.id === "body").level;
+          ok(beforeLevel > 0, "test setup did not reach a level above zero");
+          const after = C.build(many.concat([retractOf(many[0])]), { ledger: L, catalog });
+          eq(after.skills.find((s) => s.id === "body").level, beforeLevel,
+             "a retraction demoted a skill level");
+        });
+
+        t("retract: an earned standing is never lost to a retraction", function () {
+          const many = [];
+          for (let i = 0; i < 5; i++) many.push(earnEv(30, "body", 1));
+          const before = C.build(many, { ledger: L, catalog });
+          ok(before.standing.name !== "Newly Arrived", "test setup did not raise the standing");
+          const after = C.build(many.concat([retractOf(many[0])]), { ledger: L, catalog });
+          eq(after.standing.name, before.standing.name, "a retraction took away an earned standing");
+        });
+
+        t("retract: a retracted action stops counting toward actions and days logged", function () {
+          const only = earnEv(10, "body", 1);
+          const before = C.build([only], { ledger: L, catalog });
+          eq(before.actions, 1, "test setup expected one action");
+          const after = C.build([only, retractOf(only)], { ledger: L, catalog });
+          eq(after.actions, 0, "a retracted action still counted");
+          eq(after.daysLogged, 0, "a retracted action's day was still counted");
+        });
+      }
+    }
+
     return results;
   }
 

@@ -95,8 +95,15 @@
 
   .log{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:5px}
   .log li{display:flex;justify-content:space-between;gap:10px;font-size:.85rem;
-          background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+          background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;
+          transition:background .15s ease,border-color .15s ease}
   .log time{color:var(--faint);font-variant-numeric:tabular-nums;font-size:.78rem}
+  /* Hold to retract (ADR-027) — today's entries only. touch-action:pan-y keeps
+     the page scrollable; a real scroll still cancels the hold via the move
+     threshold in attachHold(), same as any long-press pattern. No visual cue
+     ever reads as "corrected" once it's done — the entry just leaves the list. */
+  .log li.holdable{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+  .log li.holding{background:var(--ember-soft);border-color:var(--ember)}
   .empty{color:var(--faint);font-size:.87rem;padding:14px 2px;line-height:1.6}
 
   footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);
@@ -214,6 +221,57 @@
     render();
   }
 
+  /* ---- hold to retract (ADR-027) ---------------------------------------
+     A new event, never a removal — ledger.js stays append-only. The window
+     (today only) and the "never surfaced as a correction" rule are enforced
+     in ledger.js and render(); this is just the gesture. */
+
+  function retract(id) {
+    var events = L.read();
+    /* Defence in depth: the affordance above is only attached to today's own
+       earn entries, but this is the actual rule, checked again here. */
+    if (!L.canRetract(events, id).ok) return;
+    var ev = L.newEvent({ kind: "retract", subject: id, meta: {} });
+    var errs = L.validate(ev, IDS);
+    if (errs.length) return;
+    L.appendAndSave(ev, IDS);
+    render();
+  }
+
+  var HOLD_MS = 650;
+
+  function attachHold(li, id) {
+    var timer = null, startX = 0, startY = 0;
+    var cancel = function () {
+      if (timer) { clearTimeout(timer); timer = null; }
+      li.classList.remove("holding");
+    };
+    var start = function (e) {
+      if (timer) return;
+      var p = e.touches ? e.touches[0] : e;
+      startX = p.clientX; startY = p.clientY;
+      li.classList.add("holding");
+      timer = setTimeout(function () {
+        timer = null;
+        li.classList.remove("holding");
+        retract(id);
+      }, HOLD_MS);
+    };
+    var move = function (e) {
+      if (!timer) return;
+      var p = e.touches ? e.touches[0] : e;
+      /* A real scroll, not a hold — abort rather than retract the wrong
+         entry because a thumb drifted. */
+      if (Math.abs(p.clientX - startX) > 10 || Math.abs(p.clientY - startY) > 10) cancel();
+    };
+    li.addEventListener("pointerdown", start);
+    li.addEventListener("pointermove", move);
+    li.addEventListener("pointerup", cancel);
+    li.addEventListener("pointercancel", cancel);
+    li.addEventListener("pointerleave", cancel);
+    li.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  }
+
   /* ---- warmth ---------------------------------------------------------
      Rises with recent activity, settles toward a FLOOR that rises permanently
      with total XP. It never reaches zero, so the worst the hearth ever looks
@@ -234,8 +292,17 @@
   function render() {
     var events = L.read();
     var totals = L.balances(events);
+    /* Skill levels read the high-water mark (ADR-027): a same-day retraction
+       may lower the live points above, but a level or a calling already
+       reached is never taken back. */
+    var hw = L.highWaterBalances(events);
+    /* Things you DID — a retracted entry never happened, so it must not seed
+       today's count, this month's day count, the hearth's warmth, or the log
+       itself (ECONOMY §2.8 rule 4). Balances above stay on the raw `events`,
+       because that is how a retraction's effect is found in the first place. */
+    var visible = L.visibleEvents(events);
     var todayKey = L.localDayKey(L.nowIso());
-    var todays = L.eventsOn(events, todayKey);
+    var todays = L.eventsOn(visible, todayKey);
     /* "Today" counts things you DID, so it counts earn events only. Until the
        shop existed every event was an earn and the distinction was invisible;
        the first purchase would have quietly incremented it, and a number
@@ -250,12 +317,12 @@
     /* "12 days this month", never a streak with a reset. A broken streak is a
        punishment for having a life (ADR-006). */
     var month = L.nowIso().slice(0, 7), days = {};
-    events.forEach(function (e) { if (e.ts && e.ts.slice(0,7) === month) days[L.localDayKey(e.ts)] = 1; });
+    visible.forEach(function (e) { if (e.ts && e.ts.slice(0,7) === month) days[L.localDayKey(e.ts)] = 1; });
     var n = Object.keys(days).length;
     $("daysline").textContent = n === 0 ? "nothing logged yet this month"
       : n + (n === 1 ? " day" : " days") + " logged this month";
 
-    var w = warmth(events, totals);
+    var w = warmth(visible, totals);
     $("hearth").style.setProperty("--warm", w.toFixed(3));
     $("hearthlabel").textContent =
       w > 0.72 ? "the hearth is burning bright" :
@@ -265,7 +332,7 @@
     // skills
     var sk = $("skills"); sk.innerHTML = "";
     ["body","home","kitchen","craft","community"].forEach(function (s) {
-      var pts = totals["skill:" + s] || 0, lv = L.levelFor(pts);
+      var pts = hw["skill:" + s] || 0, lv = L.levelFor(pts);
       var row = document.createElement("div"); row.className = "skill";
       row.innerHTML =
         '<span>' + SKILL_LABEL[s] + '</span>' +
@@ -298,7 +365,7 @@
 
     // log
     var ul = $("log"); ul.innerHTML = "";
-    var recent = events.slice(-12).reverse();
+    var recent = visible.slice(-12).reverse();
     if (!recent.length) {
       ul.innerHTML = '<li class="empty">Nothing here yet. Tap anything above that you already did today — ' +
                      'including getting out of bed.</li>';
@@ -318,6 +385,14 @@
                      '<time>' + String(e.ts).slice(11,16) +
                      (L.localDayKey(e.ts) === todayKey ? '' : ' &middot; ' + String(e.ts).slice(5,10)) +
                      '</time>';
+      /* Hold to retract (ADR-027) — today's log only, and only a thing you
+         did, never a purchase; the room is the record of what got built and
+         nothing built is ever taken back. */
+      if (e.kind === "earn" && L.canRetract(events, e.id).ok) {
+        li.classList.add("holdable");
+        li.title = "Hold to retract — for a mis-tap, not for a bad day";
+        attachHold(li, e.id);
+      }
       ul.appendChild(li);
     });
 

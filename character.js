@@ -87,10 +87,18 @@
     const totals = L.balances(evs);
     const xp = Math.round(totals["core:xp"] || 0);
     const embers = Math.round(totals["core:embers"] || 0);
+    const visible = L.visibleEvents ? L.visibleEvents(evs) : evs;
+
+    /* ADR-027: level and every stat are high-water marks — a retraction may
+     * lower the live xp/points above (that IS the correction, and it is what
+     * `xp` reports), but it must never take back a level, a skill tier, or a
+     * standing already reached. Everything that reads as a LEVEL below reads
+     * the peak, never the live total. */
+    const hw = L.highWaterBalances ? L.highWaterBalances(evs) : totals;
 
     /* ---- skills ---- */
     const skills = SKILLS.map(function (id) {
-      const points = totals["skill:" + id] || 0;
+      const points = hw["skill:" + id] || 0;
       const lv = L.levelFor(points);
       return {
         id: id,
@@ -108,10 +116,14 @@
       return b.points - a.points || SKILLS.indexOf(a.id) - SKILLS.indexOf(b.id);
     })[0];
 
-    /* ---- days. Counted, never streaked. ---- */
+    /* ---- days. Counted, never streaked. ----
+     * Reads `visible`: a retracted action never happened, so it must not seed
+     * a day, a game's first/last, or the most-logged tally (ECONOMY §2.8 rule
+     * 4 — never surfaced as a correction, which cuts both ways: it must not
+     * read as a tally of mistakes, and it must not linger as a phantom day). */
     const dayset = {};
     let first = null, last = null;
-    evs.forEach(function (e) {
+    visible.forEach(function (e) {
       if (!e || !e.ts) return;
       const d = L.localDayKey(e.ts);
       dayset[d] = (dayset[d] || 0) + 1;
@@ -124,7 +136,7 @@
 
     /* ---- which games wrote to this character ---- */
     const byGame = {};
-    evs.forEach(function (e) {
+    visible.forEach(function (e) {
       if (!e) return;
       const g = gameOf(e.source);
       const rec = byGame[g] || (byGame[g] = { game: g, events: 0, first: null, last: null });
@@ -140,7 +152,7 @@
 
     /* ---- most-logged action, purely as a mirror ---- */
     const verbCount = {};
-    evs.forEach(function (e) { if (e && e.verb) verbCount[e.verb] = (verbCount[e.verb] || 0) + 1; });
+    visible.forEach(function (e) { if (e && e.verb) verbCount[e.verb] = (verbCount[e.verb] || 0) + 1; });
     const labelOf = {};
     if (catalog) catalog.actions.forEach(function (a) { labelOf[a.verb] = a.label; });
     const mostLogged = Object.keys(verbCount)
@@ -148,7 +160,7 @@
       .slice(0, 3)
       .map(function (v) { return { verb: v, label: labelOf[v] || v, count: verbCount[v] }; });
 
-    const standing = standingFor(xp);
+    const standing = standingFor(hw["core:xp"] || 0);
     const calling = top && top.level >= 3 ? CALLING[top.id] : null;
 
     return {
@@ -160,7 +172,7 @@
       embers: embers,
       skills: skills,
       topSkill: top && top.points > 0 ? top : null,
-      actions: evs.filter(function (e) { return e && e.kind === "earn"; }).length,
+      actions: visible.filter(function (e) { return e && e.kind === "earn"; }).length,
       daysLogged: days.length,
       daysThisMonth: daysThisMonth,
       firstDay: first,

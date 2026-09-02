@@ -271,7 +271,9 @@
       g.appendChild(u);
     });
 
-    var w = warmth(events, totals);
+    /* A retracted mis-tap never happened, so it must not warm the hearth
+       (ADR-027) — same reasoning as index.html's log list. */
+    var w = warmth(L.visibleEvents(events), totals);
     var fire = (room.fixtures || [])[0];
     if (fire) {
       var fx = (fire.cell[0] + fire.size[0] / 2) * tile;

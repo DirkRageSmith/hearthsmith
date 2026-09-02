@@ -23,7 +23,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 1;
-  const SOURCE = "hearthsmith@0.6.0";
+  const SOURCE = "hearthsmith@0.7.0";
 
   /* THE LEDGER BELONGS TO THE PLAYER, NOT TO ONE GAME.
    *
@@ -44,8 +44,12 @@
   /* Kinds this version understands. An event with any other kind is PRESERVED
    * but contributes nothing to balances — the forward-compatibility rule from
    * ECONOMY.md §2. countUnknownKinds() exists so the UI can say so out loud
-   * rather than silently under-reporting someone's totals. */
-  const KNOWN_KINDS = ["earn", "spend"];
+   * rather than silently under-reporting someone's totals.
+   *
+   * "retract" was the first kind added after the schema freeze (ADR-027). It
+   * carries no grants of its own — `subject` points at the event it corrects,
+   * and its effect is looked up from that event at balance time. */
+  const KNOWN_KINDS = ["earn", "spend", "retract"];
 
   const REQUIRED_FIELDS = [
     "v", "id", "kind", "ts", "logged_at", "actor",
@@ -289,26 +293,109 @@
   /* ---------- derived state --------------------------------------------
    * Every number below is computed on read. Nothing here is ever persisted. */
 
-  function balances(events) {
-    const totals = Object.create(null);
-    for (const ev of events) {
-      if (!ev || KNOWN_KINDS.indexOf(ev.kind) === -1) continue; // preserve, don't interpret
-      if (ev.grants) {
-        for (const [cur, amt] of Object.entries(ev.grants)) {
-          if (typeof amt === "number") totals[cur] = (totals[cur] || 0) + amt;
+  function idIndex(events) {
+    const byId = Object.create(null);
+    for (const e of events || []) { if (e && e.id) byId[e.id] = e; }
+    return byId;
+  }
+
+  /* What one event contributes to a running total. Shared by balances() (sum
+   * in any order — a retraction's effect is fixed once its subject is known)
+   * and highWaterBalances() (summed in id order, tracking the peak). A
+   * "retract" carries no grants of its own; its effect is the referenced
+   * event's grants, subtracted. A subject that is not in the ledger (deleted
+   * by nobody — there is no delete — but conceivably from a different device's
+   * export) subtracts nothing rather than throwing. */
+  function eventDelta(ev, byId) {
+    const out = Object.create(null);
+    if (!ev || KNOWN_KINDS.indexOf(ev.kind) === -1) return out; // preserve, don't interpret
+    if (ev.kind === "retract") {
+      const target = ev.subject ? byId[ev.subject] : null;
+      if (target && target.grants) {
+        for (const [cur, amt] of Object.entries(target.grants)) {
+          if (typeof amt === "number") out[cur] = (out[cur] || 0) - amt;
         }
       }
-      if (ev.cost) {
-        for (const [cur, amt] of Object.entries(ev.cost)) {
-          if (typeof amt === "number") totals[cur] = (totals[cur] || 0) - amt;
-        }
+      return out;
+    }
+    if (ev.grants) {
+      for (const [cur, amt] of Object.entries(ev.grants)) {
+        if (typeof amt === "number") out[cur] = (out[cur] || 0) + amt;
       }
     }
+    if (ev.cost) {
+      for (const [cur, amt] of Object.entries(ev.cost)) {
+        if (typeof amt === "number") out[cur] = (out[cur] || 0) - amt;
+      }
+    }
+    return out;
+  }
+
+  function balances(events) {
+    const evs = events || [];
+    const byId = idIndex(evs);
+    const totals = Object.create(null);
+    for (const ev of evs) {
+      const d = eventDelta(ev, byId);
+      for (const cur of Object.keys(d)) totals[cur] = (totals[cur] || 0) + d[cur];
+    }
+    /* ECONOMY.md §2.8 / ADR-027: Embers floor at zero. A retraction can only
+     * ever reduce a balance that was already spent down toward it; the spend
+     * itself (and everything it bought) stands — this is the floor, not a
+     * clawback. */
+    if ("core:embers" in totals) totals["core:embers"] = Math.max(0, totals["core:embers"]);
     return totals;
+  }
+
+  /* The high-water mark of each currency's running balance, replayed in `id`
+   * order (ULIDs sort by time). This is what "level and every stat are
+   * high-water marks" (ADR-027) reads from: a retraction can lower the LIVE
+   * balance (balances(), above) but must never take back a level or a title
+   * already reached. In normal operation — no retractions — this equals
+   * balances(); the two only diverge once a retraction exists. */
+  function highWaterBalances(events) {
+    const evs = (events || []).filter(Boolean);
+    const byId = idIndex(evs);
+    const sorted = evs.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const running = Object.create(null), peak = Object.create(null);
+    for (const ev of sorted) {
+      const d = eventDelta(ev, byId);
+      for (const cur of Object.keys(d)) {
+        running[cur] = (running[cur] || 0) + d[cur];
+        peak[cur] = Math.max(peak[cur] || 0, running[cur]);
+      }
+    }
+    return peak;
   }
 
   function countUnknownKinds(events) {
     return events.filter((e) => e && KNOWN_KINDS.indexOf(e.kind) === -1).length;
+  }
+
+  /* Events as a person should see them: a retraction is never shown, and
+   * neither is whatever it retracted (ECONOMY §2.8 rule 4 — "never surfaced as
+   * a correction"). Anything that counts what someone DID — today's log,
+   * days logged, the action tally — should read this instead of the raw
+   * ledger. Anything that computes a BALANCE (balances(), highWaterBalances())
+   * must keep reading the raw ledger, because that is how a retraction's
+   * effect is found in the first place. */
+  function visibleEvents(events) {
+    const evs = (events || []).filter(Boolean);
+    const retracted = Object.create(null);
+    for (const e of evs) { if (e.kind === "retract" && e.subject) retracted[e.subject] = true; }
+    return evs.filter((e) => e.kind !== "retract" && !retracted[e.id]);
+  }
+
+  /* Can `subjectId` be retracted right now? Today's log only (ECONOMY §2.8) —
+   * the window IS the safety mechanism, not a default, so this is never
+   * configurable. Returns a reason, never just false, matching shop.js's
+   * canBuy() convention. */
+  function canRetract(events, subjectId, opts) {
+    const now = (opts && opts.now) || nowIso();
+    const target = (events || []).find((e) => e && e.id === subjectId);
+    if (!target) return { ok: false, why: "no such event" };
+    if (localDayKey(target.ts) !== localDayKey(now)) return { ok: false, why: "not from today" };
+    return { ok: true, why: null };
   }
 
   /* Levels get further apart and never cap. Cumulative cost of level L is
@@ -332,6 +419,7 @@
     SCHEMA_VERSION, SOURCE, STORAGE_KEY, LEGACY_KEYS, KNOWN_KINDS, REQUIRED_FIELDS,
     nowIso, ulid, newEvent, validate, currencyIdSet,
     serialize, deserialize, read, write, append, appendAndSave, migrate,
-    balances, countUnknownKinds, levelFor, localDayKey, eventsOn
+    balances, highWaterBalances, visibleEvents, canRetract,
+    countUnknownKinds, levelFor, localDayKey, eventsOn
   };
 });

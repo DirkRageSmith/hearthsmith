@@ -98,7 +98,11 @@
 
   /* The skill-tree level, which is what `unlock_level` means. Uses the character
    * layer when it is present so there is exactly one definition of a level, and
-   * falls back to the ledger's own levelFor when shop.js is used standalone. */
+   * falls back to the ledger's own levelFor when shop.js is used standalone.
+   *
+   * Reads highWaterBalances, not balances: a level once reached must never be
+   * un-reached by a same-day retraction (ADR-027) — a catalogue item already
+   * unlocked cannot re-lock itself out from under a purchase in progress. */
   function skillLevel(events, skill, opts) {
     const L = ledgerOf(opts);
     const C = (opts && opts.character) || (typeof Character !== "undefined" ? Character : null);
@@ -107,7 +111,8 @@
         .filter(function (s) { return s.id === skill; })[0];
       if (found) return found.level;
     }
-    return L.levelFor(L.balances(events || [])["skill:" + skill] || 0).level;
+    const hw = L.highWaterBalances ? L.highWaterBalances(events || []) : L.balances(events || []);
+    return L.levelFor(hw["skill:" + skill] || 0).level;
   }
 
   /* ---- the purchase ---------------------------------------------------------

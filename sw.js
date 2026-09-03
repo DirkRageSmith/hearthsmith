@@ -23,7 +23,7 @@ const SHELL = [
 /* sha256 of the SHELL files (sorted, concatenated), first 16 hex. Maintained by
  * tools/doctor.mjs — it is the mechanism that makes "bump CACHE" impossible to
  * forget rather than merely written down. */
-const SHELL_HASH = "4cf7b660e69ff9d5";
+const SHELL_HASH = "65cf523b6f9892ff";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

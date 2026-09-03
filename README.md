@@ -14,16 +14,30 @@ a few weeks is the same thing that — if it keeps going — becomes the world.
 
 ## Status
 
-**Tier 1 — The First Home. Slice 1.1, the shop.**
+**Tier 1 — The First Home. Slices 1.1 through 1.8 are DONE, merged and live.**
 <https://dirkragesmith.github.io/hearthsmith/>
+
+*Corrected 2026-09-03. This block had said "Slice 1.1, the shop", "32 tests" and
+"service worker `v0.3.0`" — seven slices and eleven versions out of date. It had been
+flagged as stale in two handoffs without being fixed, because a Bellows pass is not
+allowed to edit a decision doc and nobody was sure this counted as one. It does not; it
+is a status report, and a status report that lies is worse than none.*
 
 Tier 0 is complete. Its gate was revised and met on 2026-08-31 (**ADR-017**): the
 three-outside-testers requirement moved to the *end of Tier 1*, where there is a game to
-react to rather than a habit tracker. The app runs, the doctor is HEALTHY, and **32 tests**
-pass.
+react to rather than a habit tracker.
 
-**All of it is live as of 2026-08-31 12:40 — fetched, not assumed:** `/`, `/profile.html`,
-`/character.js` and `/sw.js` all return **200**, and the served service worker is `v0.3.0`.
+**Live and verified 2026-09-03 by fetching the served asset, not by reading the repo:**
+`ledger.js` reports `hearthsmith@0.14.0` on both this site and FitFlexr's. `node
+tools/doctor.mjs` reads **12 ok, 2 warn, 0 fail** with **75 ledger tests** passing.
+
+**Both warnings are correct and should not be silenced.** `NEXT.md current — no slice
+number found` is right: no slice is chosen, because everything remaining is a taste call.
+`vendored ledger` warns whenever Hearthsmith is on a branch, because a vendored copy taken
+from a branch is a claim about something that does not ship.
+
+**The one box left on the Tier 1 gate** is the outside tester — unticked since
+2026-08-31. Only a human can tick it.
 
 Worth keeping for the next person who publishes here: the two new files **404'd for the
 first 30 seconds and answered 200 at 40.** A single check would have recorded the wrong
@@ -93,10 +107,15 @@ browser is not a test.
 | 0.6 | **Ship it** | Live on Pages, HTTP 200 verified, on Matt's phone home screen | ✅ **2026-08-31** |
 | 0.7 | Export | One button dumps the whole ledger as JSON (ADR-005, non-negotiable) | ✅ **2026-08-25** |
 | — | **Tier 0 gate** | Revised and met — ADR-017 moved the three testers to the end of Tier 1 | ✅ **2026-08-31** |
-| 1.0 | Character sheet | `character.js` + `profile.html`, computed from the ledger, never stored | ⚠️ **built, not pushed** |
-| 1.1 | **The shop** | Spend Embers, the item appears in a room, survives a refresh | ☐ **← current — see [../NEXT.md](../NEXT.md)** |
+| 1.0 | Character sheet | `character.js` + `profile.html`, computed from the ledger, never stored | ✅ **2026-08-31** |
+| 1.1 | **The shop** | Spend Embers, the item appears in a room, survives a refresh | ✅ **2026-09-01** |
+| 1.2–1.8 | The room becomes a place | Tile-rendered room, examine text, hold-to-retract, the six-stat layer, ADR-030's 16-bit chrome, oblique furniture. **Per-slice detail is in `bellows/LOG.md`, which is the authority** — it is not re-summarised here, because a second summary is a second thing to drift | ✅ **through 2026-09-03** |
+| — | **Tier 1 gate** | One box left: the outside tester (ADR-017). Only a human can tick it | ☐ **open** |
 
-**Health:** run `node tools/doctor.mjs` from the studio root — 22 ledger tests, an
+*This table said "1.1 ← current" until 2026-09-03, seven slices after it stopped being true.
+`NEXT.md` deliberately names no slice now: everything remaining is a taste call.*
+
+**Health:** run `node tools/doctor.mjs` from the studio root — 75 ledger tests, an
 end-to-end storage simulation, the harm-prevention rules mechanised, and doc-vs-code drift
 detection. Currently **HEALTHY**.
 
@@ -108,10 +127,12 @@ detection. Currently **HEALTHY**.
 | `catalog.json` | The curated action list. Authored, never generated (ADR-012). |
 | `currencies.json` | The currency registry. An ID not in here is a hard validation error. |
 | `index.html` | The app. Dark-first, thumb-sized targets, no build step. |
-| `tests.js` / `tests.html` | 32 tests. `node tests.js`, or open `tests.html` in a browser. |
+| `tests.js` / `tests.html` | 75 tests. `node tests.js`, or open `tests.html` in a browser. |
 | `character.js` | The cross-game character layer — levels, standings, crest. **Computed from the ledger, never stored**, so any future game gets the same character for free. |
 | `profile.html` | The character sheet: procedural crest, five trees, and a per-game breakdown that shows the shared world working. |
 | `sw.js` · `manifest.json` · `icon.svg` | Installable and offline-first — a bad day with no signal is still a day you can log. |
+| `palette.css` | **Every interface colour, in one file.** The seam for "can it look more SNES". A doctor check fails on any colour literal written outside it. |
+| `tiles.js` | The **sprite** palette and tileset — a separate seam, deliberately. A room is a place; it does not follow the interface theme. |
 
 **Running it locally:** serve the folder, don't open the file directly —
 `python -m http.server 8080` then `http://localhost:8080`. Opening `index.html` off the
@@ -819,3 +840,53 @@ reads, and an undocumented park becomes an abandonment.*
 > **Still open, and not covered by the browser review: the service worker on a real phone**
 > (unverified since 0.5.0). `CACHE` moved `v0.12.0` → `v0.14.0`, so an already-installed
 > device either picks the update up or visibly does not — the best chance yet to settle it.
+>
+> **2026-09-03 (palette layer — `hearthsmith@0.14.1`)** — Matt asked to be able to walk up
+> to this project in a few months and say *"can it look more SNES like"* or *"I want a
+> farmhouse"* and have that be an afternoon rather than a rewrite. That is a **redirect
+> cost**, and it is now a specified property of the codebase rather than a hope. Measured
+> before the work: **139 colour literals across five files.**
+>
+> **`palette.css` now holds every interface colour**, and a new doctor check — *"palette is
+> the only seam"* — **fails** on any colour literal written outside it. `tiles.js` is
+> untouched and remains the separate seam for **sprite** colour; a room is a place, and it
+> does not follow the interface theme.
+>
+> **This reversed a decision recorded in `room.html`** — *"deliberately duplicated rather
+> than extracted"* — and the reversal is written into `palette.css` rather than left for
+> someone to rediscover. The decision was correct when written and its premise had moved on
+> three counts: it said **two** copies of **eleven** properties and there were **three** of
+> **fifteen**; the copies had **drifted**; and the cache-bust cost it was avoiding is now
+> paid by check 9 rather than by memory.
+>
+> **PROVEN NO-OP, element by element.** `main` and the branch were served side by side and
+> every element's computed colour, borders, box-shadow, opacity, radius, filter and
+> background-image was fingerprinted, plus every SVG `fill`/`stroke`/`stop-color`:
+> room.html 4126 fingerprints `b490e23c`, index.html `48e00faf`, profile.html `68993c4d`,
+> index in light mode `5fa8ab2e` — identical on both sides, and room.html in light mode
+> still resolves `--bg:#141019`, so the JRPG commitment holds and light mode does not leak.
+>
+> **The first comparison MISMATCHED and the measurement was wrong, not the code.**
+> `color-mix()` serialises as `color(srgb 0.960784 0.772549 0.258824 / 0.35)` rather than
+> `rgba(245, 197, 66, 0.35)` — the same colour once multiplied by 255. Worth knowing before
+> trusting any future before/after diff on this codebase.
+>
+> **The check earned its place immediately**: it found seven `hsl()` literals in the crest
+> that a hex-and-rgba grep had missed entirely. Its first version then flagged its own
+> explanatory comment, so the pattern now requires a **number** inside the parens — the line
+> between a value someone typed and a value someone looked up. **Verified by breaking it**
+> in both directions, because this repo has four recorded cases of a check that looked right
+> and measured something adjacent.
+>
+> **THE ONE INTENTIONALLY VISIBLE CHANGE: `index.html` is square now.** It had been on
+> `--r:14px` since ADR-030 replaced it with square corners on the other two pages, and the
+> divergence survived because nobody opened the three side by side. Matt's call, 2026-09-03.
+>
+> **An honest limit, found by actually trying a SNES pass rather than assuming.** The
+> committed JRPG chrome is a *second* block redefining seven surface tokens, so a full
+> re-skin of `room.html`/`profile.html` means editing **two adjacent blocks in one file**,
+> not one. Far better than 139 sites across five, and not the "one edit" it would have been
+> tempting to claim. Collapsing them is re-choosing rather than extracting, so it was left.
+>
+> **Still open and still only answerable by a human:** the service worker on a real phone
+> (unverified since 0.5.0), and the outside tester on the Tier 1 gate.

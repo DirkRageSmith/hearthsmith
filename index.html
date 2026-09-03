@@ -11,11 +11,15 @@
   /* Every colour token lives in palette.css, including this page's light mode.
      Only --r is per-page and stays here.
 
-     NOTE, carried over unchanged and deliberately NOT fixed here: this page is
-     still on the 14px radius that ADR-030 replaced with square corners on the
-     other two. That is a real divergence, but changing it is re-choosing rather
-     than extracting, so it is Matt's call and not this commit's. */
-  :root{ --r:14px; }
+     SQUARED 2026-09-03, on Matt's call. This page had been on --r:14px since
+     ADR-030 replaced it with square corners on room.html and profile.html —
+     the divergence was invisible because nobody opened the three pages side by
+     side. ADR-030's reasoning applies here unchanged: the 14px radius is a
+     2015 app idiom and was quietly fighting everything else on the page.
+
+     This is the ONLY intentionally visible change in the palette work. Every
+     other line of it was proven identical to main, element by element. */
+  :root{ --r:0px; }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{

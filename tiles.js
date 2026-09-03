@@ -204,7 +204,7 @@
     hearth: [
       "................",
       "..aaaaaaaaaaaa..",
-      "..avvvvvvvvvva..",
+      "..aeeeeeeeeeea..",
       "..avaaaaaaaava..",
       "..avattttttava..",
       "..avattttttava..",
@@ -294,7 +294,7 @@
       "................"
     ],
     pantry: [
-      ".cccccccccccccc.",
+      ".eeeeeeeeeeeeee.",
       ".cbbbbbbbbbbbbc.",
       ".cbeeeeeeeeeebc.",
       ".cbejjelleoobbc.",
@@ -315,7 +315,7 @@
     /* --- body / bedroom --- */
     bed: [
       "................",
-      "...cccccccccc...",
+      "...eeeeeeeeee...",
       "..cddddddddddc..",
       "..cdffffffffdc..",
       "..cdfffffffddc..",
@@ -339,7 +339,7 @@
       "....oqppqo......",
       ".....hhhh.......",
       "......hh........",
-      "..dddddddddd....",
+      "..eeeeeeeeee....",
       "..cccccccccc....",
       "..cbbbbbbbbc....",
       "..cbaaaaaabc....",
@@ -350,7 +350,7 @@
       "................"
     ],
     wardrobe: [
-      ".cccccccccccccc.",
+      ".eeeeeeeeeeeeee.",
       ".cddddddddddddc.",
       ".cdbbbbccbbbbdc.",
       ".cdbaaabcbaaabc.",
@@ -372,7 +372,7 @@
     sofa: [
       "................",
       "................",
-      "..llllllllllll..",
+      "..ffffffffffff..",
       ".lmllllllllllml.",
       ".lmllllllllllml.",
       ".lmllllllllllml.",
@@ -391,7 +391,7 @@
       "................",
       "................",
       "................",
-      "....jjjjjjjj....",
+      "....ffffffff....",
       "...jkjjjjjjkj...",
       "...jkjjjjjjkj...",
       "...jkjjjjjjkj...",
@@ -442,7 +442,7 @@
       "................"
     ],
     bookshelf: [
-      ".cccccccccccccc.",
+      ".eeeeeeeeeeeeee.",
       ".cddddddddddddc.",
       ".cbjjllnnjjoobc.",
       ".cbjjllnnjjoobc.",
@@ -499,7 +499,7 @@
     ],
     toolrack: [
       "................",
-      "..bbbbbbbbbbbb..",
+      "..eeeeeeeeeeee..",
       "..cccccccccccc..",
       "..a..h..a...h...",
       "..a..h..a...h...",
@@ -666,7 +666,7 @@
     guestchair: [
       "................",
       "................",
-      "....llllllll....",
+      "....ffffffff....",
       "....lmllllml....",
       "....lmllllml....",
       "....lmllllml....",

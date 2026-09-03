@@ -741,3 +741,59 @@ reads, and an undocumented park becomes an abandonment.*
 > and OPERATING.md forbids a pass from pushing one. Committed to a new local branch,
 > `bellows/hearth-talks-back`, one commit on top of the `main` this pass started from — see
 > `bellows/HANDOFF.md` for what to check before merging.
+>
+> **2026-09-03 (Bellows pass, 0.14.0) — slice 1.8, oblique tops on furniture.** `NEXT.md`
+> asked for all seventeen `layer:"floor"` sprites (plus the hearth) to stop reading as flat
+> stickers on the oblique floor ADR-030 shipped in 0.11.0. The rule applied, uniformly and
+> mechanically rather than sprite-by-sprite taste: **the topmost non-outline row of an
+> object's body must already be that material's existing palest/highlight palette tone**
+> (`e` for wood, `u` for metal, the cushion's own `f` cream reused as a rim on cloth-topped
+> backs where the palette has no lighter cloth tone) — recolour it if it is not, leave it if
+> it already is. **10 of the 17 needed a change** (`hearth`, `pantry`, `bed`, `nightstand`,
+> `wardrobe`, `sofa`, `armchair`, `bookshelf`, `toolrack`, `guestchair`); **7 already had it**
+> (`stove`, `sink`, `counter`, `table`, `desk`, `workbench`, `plant` — the last because leaf
+> `n` has no lighter sibling in the palette at all, so there was nothing to reach for without
+> adding a key, which the slice's own rule forbids). No grid changed size, no key was
+> renamed, no new palette entry was added — verified by running the real `sprite()` function
+> against all 17 names from Node (grid still 16×16, every character still a real `PALETTE`
+> key), since no browser tool exists in this session to actually look at it.
+>
+> **A real process mistake, caught before it was committed, worth recording.** `hearthsmith`
+> was still checked out on the unmerged `bellows/hearth-talks-back` branch from the previous
+> pass when this one started editing `tiles.js` — so the first ten edits landed on top of
+> slice 1.7's branch instead of on `main`, which `NEXT.md` explicitly says this slice must
+> not depend on. Caught by running `git branch --show-current` before committing anything,
+> not by assuming the working tree matched the read-order docs. Fixed by reverting the
+> working-tree edits with the editor (not `git checkout --`, which this session's rope
+> denies), confirming `git diff main bellows/hearth-talks-back -- tiles.js` was empty so the
+> revert-and-redo was safe, then branching fresh from `main` as `bellows/oblique-tops` and
+> reapplying the same ten edits there.
+>
+> **The version number collides with 1.7's, and that is now Matt's to resolve, not a pass's.**
+> Both `bellows/hearth-talks-back` (`hearthsmith@0.13.0`) and this branch
+> (`hearthsmith@0.14.0`) start from the same `main` at `0.12.0` and both bump `ledger.js`'s
+> `SOURCE`, `sw.js`'s `CACHE`, and `SHELL_HASH` — two independent bumps of the same line from
+> the same base, which git will flag as a merge conflict on that one line whichever branch
+> is merged second. That conflict is correct, not a bug to route around: it forces whoever
+> merges second to pick the final number and re-run `tools/doctor.mjs` for the real
+> `SHELL_HASH`, rather than one branch silently overwriting the other's version bump.
+> **Not re-vendored to FitFlexr this pass.** `swipefit`'s `ledger.js` currently carries
+> 1.7's unpushed 0.13.0 re-vendor; overwriting it with this branch's 0.14.0 would make the
+> vendored copy match neither branch that is actually reviewed yet. `tools/doctor.mjs`'s
+> "vendored ledger" check therefore reports **FAIL, not warn**, when run from `main` (unlike
+> the WARN it gave on the 1.7 branch, where the vendored copy does match) — a real,
+> pre-existing consequence of two unmerged sibling branches touching a shared vendored file,
+> not a fresh defect from this pass's sprites. Whoever merges 1.7 and/or 1.8 should do one
+> final FitFlexr re-vendor afterward, once there's a single settled version number.
+>
+> **75 tests, unchanged** (no ledger logic touched). **Doctor: 12 ok, 0 warn, 1 fail** — the
+> vendored-ledger fail above, expected and explained; every other check green, including
+> `tileset` (still 37 sprites, all 16×16) and `shell hash` (12 shell files match v0.14.0,
+> converged after two recomputations for the same reason ADR-028's note already
+> describes — `SHELL_HASH` lives inside `sw.js`, which is not itself one of the hashed
+> shell files, so this is not the self-referential loop it first looks like; the first
+> "recomputation" was actually still catching up to the *previous* edit, not to itself).
+> **Not verified: what any of this looks like.** No browser or screenshot tool was available
+> in this unattended session, so — same caveat as 1.7's — this needs the two-minute phone
+> check before merging: walk to a few of the ten changed pieces and confirm the highlight
+> reads as a lit top surface and not a smear.

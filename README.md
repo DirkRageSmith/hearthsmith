@@ -797,3 +797,25 @@ reads, and an undocumented park becomes an abandonment.*
 > in this unattended session, so — same caveat as 1.7's — this needs the two-minute phone
 > check before merging: walk to a few of the ten changed pieces and confirm the highlight
 > reads as a lit top surface and not a smear.
+>
+> **2026-09-03 (0.14.0, merged and reviewed) — 1.7 and 1.8 are live, and they were looked
+> at.** Both branches merged linearly (1.7 fast-forward, 1.8 rebased on top, keeping a
+> history with no merge commits) and pushed; Matt reviewed the result in a browser and it
+> reads correctly. **That closes the "not verified" caveat above** — which both passes were
+> right to leave open rather than close on logic checks alone.
+>
+> **`SHELL_HASH` could not be taken from either branch, and that is the transferable part.**
+> 1.7 changed `room.html`, 1.8 changed `tiles.js`, so the merged shell hashed to a third
+> value neither branch had recorded (`c34480ad2bf9b01c`). When two branches both touch shell
+> files, that conflict resolves by **recomputing** from `tools/doctor.mjs`, not by picking a
+> side — a "pick one" resolution here would have shipped a hash matching neither tree and
+> left the service worker serving a stale shell, silently, which is the exact failure
+> ADR-028's check exists to prevent.
+>
+> **This file conflicted too, and the resolution was keep-both.** Both passes appended a
+> "Where I stopped" entry at the same anchor. This section is append-only history, not a
+> version marker, so picking one would have destroyed a pass's record.
+>
+> **Still open, and not covered by the browser review: the service worker on a real phone**
+> (unverified since 0.5.0). `CACHE` moved `v0.12.0` → `v0.14.0`, so an already-installed
+> device either picks the update up or visibly does not — the best chance yet to settle it.

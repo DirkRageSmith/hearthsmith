@@ -1,27 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-chrome="jrpg">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#151013">
 <title>Character — Ragesmith</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="palette.css">
 <style>
-  :root{
-    --bg:#151013; --panel:#1e1719; --panel-2:#261d20; --line:#3a2c2f;
-    --ink:#f3e9e2; --dim:#a8968f; --faint:#7b6b67;
-    --ember:#ff9d4d; --glow:#ffce8a; --ember-soft:#5a3620;
-    --body:#8fbf7f; --home:#7fa8d8; --kitchen:#e2a06a; --craft:#b79bd8; --community:#e08fa8;
-    --r:0px;
-    --frame-ink:#2d1b33; --frame-trim:#f5c542; --frame-fill:#241a2e;
-  }
-  /* Committed to the JRPG chrome, same as room.html and for the same reason
-     (ADR-030): this page is now a menu window over a moving colour field, and
-     a cream version of that is a different object, not a light variant. */
-  :root{
-    --bg:#141019; --panel:#241a2e; --panel-2:#2f2239; --line:#3d2c4a;
-    --ink:#f6ecdc; --dim:#b3a2b8; --faint:#8b7f9a;
-  }
+  /* Every colour token lives in palette.css. This page commits to the JRPG
+     chrome (ADR-030) via <html data-chrome="jrpg"> rather than a second :root
+     block — a menu window over a moving colour field is a different object
+     from a cream light variant, not a theme of it. Only --r stays here. */
+  :root{ --r:0px; }
   /* ---- THE BACKGROUND (ADR-030, EarthBound pass) -----------------------
      EarthBound's signature is not a sprite — it is an ALGORITHM. The battle
      backgrounds were two layers of pattern warped per scanline by the SNES's
@@ -39,7 +30,7 @@
      that is this game's equivalent of the moment you stop and look. */
   .psy{
     position:fixed; inset:0; z-index:-2; overflow:hidden;
-    background:#141019; pointer-events:none;
+    background:var(--bg); pointer-events:none;
   }
   .psy::before, .psy::after{
     content:""; position:absolute; inset:-40%;
@@ -48,17 +39,17 @@
   }
   .psy::before{
     background-image:
-      radial-gradient(circle at 25% 25%, #ff4f9a 0 8%, transparent 34%),
-      radial-gradient(circle at 75% 65%, #2fd8c8 0 9%, transparent 36%),
-      radial-gradient(circle at 55% 15%, #7a5cff 0 7%, transparent 30%);
+      radial-gradient(circle at 25% 25%, var(--drift-1) 0 8%, transparent 34%),
+      radial-gradient(circle at 75% 65%, var(--drift-2) 0 9%, transparent 36%),
+      radial-gradient(circle at 55% 15%, var(--drift-3) 0 7%, transparent 30%);
     background-size:340px 340px, 420px 420px, 280px 280px;
     opacity:.30;
     animation:psy-a 46s linear infinite;
   }
   .psy::after{
     background-image:
-      repeating-linear-gradient(58deg, rgba(255,214,74,.55) 0 12px, transparent 12px 34px),
-      repeating-linear-gradient(-49deg, rgba(94,214,255,.42) 0 9px, transparent 9px 40px);
+      repeating-linear-gradient(58deg, color-mix(in srgb,var(--drift-stripe-1) 55%,transparent) 0 12px, transparent 12px 34px),
+      repeating-linear-gradient(-49deg, color-mix(in srgb,var(--drift-stripe-2) 42%,transparent) 0 9px, transparent 9px 40px);
     opacity:.16;
     mix-blend-mode:screen;
     animation:psy-b 33s linear infinite;
@@ -204,23 +195,34 @@
     try { localStorage.setItem(NAME_KEY, JSON.stringify({ name: n })); } catch (e) {}
   }
 
+  /* ---- the crest's colour ------------------------------------------------
+   * The HUE is the character's — identity, and it stays in the data. The
+   * saturation and lightness are style, and they live in palette.css so that
+   * flattening the crest for a different era is one edit there rather than
+   * seven here. hsl() is composed in the space-separated form so the token can
+   * carry the "S L" pair whole. */
+  var CREST = (function () {
+    var cs = getComputedStyle(document.documentElement);
+    return function (hue, token) { return "hsl(" + hue + " " + cs.getPropertyValue(token).trim() + ")"; };
+  })();
+
   function drawCrest(crest) {
     var pts = crest.points.map(function (p) { return p.x + "," + p.y; }).join(" ");
-    var svg = '<defs><radialGradient id="g"><stop offset="0%" stop-color="hsl(' + crest.hue +
-              ',85%,68%)" stop-opacity=".55"/><stop offset="100%" stop-color="hsl(' +
-              crest.hue + ',85%,50%)" stop-opacity=".06"/></radialGradient></defs>';
+    var svg = '<defs><radialGradient id="g"><stop offset="0%" stop-color="' +
+              CREST(crest.hue, "--crest-glow-in") + '" stop-opacity=".55"/><stop offset="100%" stop-color="' +
+              CREST(crest.hue, "--crest-glow-out") + '" stop-opacity=".06"/></radialGradient></defs>';
     svg += '<circle cx="50" cy="50" r="46" fill="url(#g)"/>';
-    svg += '<polygon points="' + pts + '" fill="hsl(' + crest.hue +
-           ',80%,60%)" fill-opacity=".26" stroke="hsl(' + crest.hue +
-           ',85%,66%)" stroke-width="1.6" stroke-linejoin="round"/>';
+    svg += '<polygon points="' + pts + '" fill="' + CREST(crest.hue, "--crest-fill") +
+           '" fill-opacity=".26" stroke="' + CREST(crest.hue, "--crest-edge") +
+           '" stroke-width="1.6" stroke-linejoin="round"/>';
     crest.points.forEach(function (p) {
       /* An unlit node is a tree not yet started. It is drawn hollow rather than
          missing — nothing here should read as a gap you failed to fill. */
       svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (p.lit ? 3.4 : 2.2) +
-             '" fill="' + (p.lit ? 'hsl(' + p.hue + ',70%,64%)' : 'none') +
-             '" stroke="hsl(' + p.hue + ',45%,52%)" stroke-width="1.2"/>';
+             '" fill="' + (p.lit ? CREST(p.hue, "--crest-node-lit") : 'none') +
+             '" stroke="' + CREST(p.hue, "--crest-node-ring") + '" stroke-width="1.2"/>';
     });
-    svg += '<circle cx="50" cy="50" r="3" fill="hsl(' + crest.hue + ',90%,72%)"/>';
+    svg += '<circle cx="50" cy="50" r="3" fill="' + CREST(crest.hue, "--crest-core") + '"/>';
     $("crest").innerHTML = svg;
   }
 

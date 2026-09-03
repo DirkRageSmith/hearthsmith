@@ -1,58 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-chrome="jrpg">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#151013">
 <title>The main room — Hearthsmith</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="palette.css">
 <style>
-  /* Same palette as index.html, deliberately duplicated rather than extracted.
-     Extracting it would add a stylesheet to the shell, and a shell file is a
-     thing that has to be cache-busted forever. Two copies of eleven custom
-     properties is the cheaper of the two debts at this size.
+  /* EVERY COLOUR TOKEN LIVES IN palette.css. This block used to hold a third
+     copy of them; see that file for why the "deliberately duplicated" decision
+     recorded here was reversed on 2026-09-03. Only --r is per-page.
 
-     NOTE: this palette themes the INTERFACE. The room itself has its own fixed
-     palette in tiles.js and does not follow light/dark — a room is a place, and
-     a place does not change colour because the phone did. */
-  :root{
-    --bg:#151013; --panel:#1e1719; --panel-2:#261d20; --line:#3a2c2f;
-    --ink:#f3e9e2; --dim:#a8968f; --faint:#7b6b67;
-    --ember:#ff9d4d; --ember-soft:#5a3620; --glow:#ffce8a;
-    --body:#8fbf7f; --home:#7fa8d8; --kitchen:#e2a06a; --craft:#b79bd8; --community:#e08fa8;
-    --r:0px;
-    /* ---- 16-bit JRPG chrome (ADR-030) ----------------------------------
-       Matt's direction, 2026-09-02: Super Mario RPG / EarthBound / Final
-       Fantasy Mystic Quest. The window frame is the most recognisable thing
-       those three share AND the safest to evoke — a thick-bordered menu box
-       is genre convention going back to Dragon Quest, not any one game's
-       expression. What is off limits is their characters, sprites, music,
-       logos and names, none of which appear anywhere in this project.
-
-       Three layers, and all three matter: a plum outline (never black), a
-       gold bevel inside it, then the dark interior. Square corners — the 14px
-       radius this replaced is a 2015 app idiom and was quietly fighting
-       everything else on the page. */
-    --frame-ink:#2d1b33;
-    --frame-trim:#f5c542;
-    --frame-fill:#241a2e;
-    --frame-fill-2:#2f2239;
-  }
-  /* THIS PAGE DOES NOT FOLLOW THE OS THEME, and that is now a decision rather
-     than an oversight. The room already refused to (a room is a place, and a
-     place does not change colour because the phone did); once the chrome became
-     a JRPG menu the same argument covers the whole page — a menu box is a dark
-     window with gold trim, and a cream one is a different object.
+     THIS PAGE DOES NOT FOLLOW THE OS THEME, and that is a decision rather than
+     an oversight — kept here because it is about this page, not about colour
+     values. The room already refused to (a room is a place, and a place does
+     not change colour because the phone did); once the chrome became a JRPG
+     menu the same argument covers the whole page — a menu box is a dark window
+     with gold trim, and a cream one is a different object.
 
      It also removes a real bug rather than a merely aesthetic mismatch: the
      shop rows now sit on the dark frame fill, so a light-mode `--ink` would
      have painted dark text on a dark panel and made the whole catalogue
      unreadable. Committing is cheaper and truer than threading two palettes
-     through a frame that only works in one of them. */
-  :root{
-    --bg:#141019; --panel:#241a2e; --panel-2:#2f2239; --line:#3d2c4a;
-    --ink:#f6ecdc; --dim:#b3a2b8; --faint:#8b7f9a;
-  }
+     through a frame that only works in one of them. That commitment is now
+     expressed as <html data-chrome="jrpg">.
+
+     NOTE: palette.css themes the INTERFACE. The room itself has its own fixed
+     palette in tiles.js and does not follow light/dark either. */
+  :root{ --r:0px; }
   /* ---- THE BACKGROUND (ADR-030, EarthBound pass) -----------------------
      EarthBound's signature is not a sprite — it is an ALGORITHM. The battle
      backgrounds were two layers of pattern warped per scanline by the SNES's
@@ -70,7 +46,7 @@
      that is this game's equivalent of the moment you stop and look. */
   .psy{
     position:fixed; inset:0; z-index:-2; overflow:hidden;
-    background:#141019; pointer-events:none;
+    background:var(--bg); pointer-events:none;
   }
   .psy::before, .psy::after{
     content:""; position:absolute; inset:-40%;
@@ -79,17 +55,17 @@
   }
   .psy::before{
     background-image:
-      radial-gradient(circle at 25% 25%, #ff4f9a 0 8%, transparent 34%),
-      radial-gradient(circle at 75% 65%, #2fd8c8 0 9%, transparent 36%),
-      radial-gradient(circle at 55% 15%, #7a5cff 0 7%, transparent 30%);
+      radial-gradient(circle at 25% 25%, var(--drift-1) 0 8%, transparent 34%),
+      radial-gradient(circle at 75% 65%, var(--drift-2) 0 9%, transparent 36%),
+      radial-gradient(circle at 55% 15%, var(--drift-3) 0 7%, transparent 30%);
     background-size:340px 340px, 420px 420px, 280px 280px;
     opacity:.30;
     animation:psy-a 46s linear infinite;
   }
   .psy::after{
     background-image:
-      repeating-linear-gradient(58deg, rgba(255,214,74,.55) 0 12px, transparent 12px 34px),
-      repeating-linear-gradient(-49deg, rgba(94,214,255,.42) 0 9px, transparent 9px 40px);
+      repeating-linear-gradient(58deg, color-mix(in srgb,var(--drift-stripe-1) 55%,transparent) 0 12px, transparent 12px 34px),
+      repeating-linear-gradient(-49deg, color-mix(in srgb,var(--drift-stripe-2) 42%,transparent) 0 9px, transparent 9px 40px);
     opacity:.16;
     mix-blend-mode:screen;
     animation:psy-b 33s linear infinite;
@@ -139,7 +115,7 @@
     appearance:none;cursor:pointer;font:inherit;font-size:.8rem;min-height:40px;
     display:inline-flex;align-items:center;text-decoration:none;
     background:var(--panel);color:var(--ink);border:2px solid var(--frame-ink);
-    box-shadow:inset 0 0 0 1px rgba(245,197,66,.35);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--frame-trim) 35%,transparent);
     border-radius:0;padding:9px 13px;
   }
 
@@ -156,10 +132,10 @@
     border:3px solid var(--frame-ink);
     box-shadow:inset 0 0 0 2px var(--frame-trim), inset 0 0 0 5px var(--frame-ink);
     border-radius:0;overflow:hidden;
-    background:#2b211c;margin-bottom:14px;line-height:0;
+    background:var(--strip-bg);margin-bottom:14px;line-height:0;
   }
   .room svg{display:block;width:100%;height:auto}
-  .vacant{fill:#ffffff;fill-opacity:.045;stroke:#ffffff;stroke-opacity:.13;
+  .vacant{fill:var(--vacant);fill-opacity:.045;stroke:var(--vacant);stroke-opacity:.13;
           stroke-width:1;stroke-dasharray:3 3}
   .roomline{color:var(--dim);font-size:.8rem;text-align:center;padding:10px 12px;line-height:1.5}
   .roomline b{color:var(--frame-trim);font-weight:600}
@@ -179,10 +155,10 @@
   .row{
     display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:11px;
     background:var(--frame-fill);border:2px solid var(--frame-ink);
-    box-shadow:inset 0 0 0 1px rgba(245,197,66,.35);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--frame-trim) 35%,transparent);
     border-radius:0;padding:11px 13px;
   }
-  .row .thumb{width:46px;height:46px;border-radius:0;background:#1d1526;display:block;padding:3px;
+  .row .thumb{width:46px;height:46px;border-radius:0;background:var(--thumb-bg);display:block;padding:3px;
             border:2px solid var(--frame-ink)}
   .row .name{font-size:.9rem;line-height:1.3}
   .row .blurb{color:var(--faint);font-size:.76rem;line-height:1.35;margin-top:2px}
@@ -200,7 +176,7 @@
   }
   button.buy:active{transform:scale(.96)}
   button.buy.ready{border-color:var(--ember);color:var(--ember)}
-  button.buy.confirm{background:var(--ember);border-color:var(--ember);color:#2a1608;font-weight:700}
+  button.buy.confirm{background:var(--ember);border-color:var(--ember);color:var(--on-ember);font-weight:700}
   button.buy[disabled]{opacity:.5;cursor:default}
 
   footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);
@@ -257,6 +233,17 @@
   var $ = function (id) { return document.getElementById(id); };
   var NS = "http://www.w3.org/2000/svg";
 
+  /* ---- the palette, resolved -------------------------------------------
+   * Colour lives in palette.css so that "make it more SNES" is one edit. SVG
+   * presentation attributes do not parse var(), so the tokens are resolved to
+   * values here rather than referenced — the lookup is live (getComputedStyle
+   * returns a live object), so changing a token still takes effect on the next
+   * draw. This is the ONLY place this file is allowed to know a colour. */
+  var PAL = (function () {
+    var cs = getComputedStyle(document.documentElement);
+    return function (name) { return cs.getPropertyValue(name).trim(); };
+  })();
+
   var SKILL_LABEL = { body:"Body", home:"Home", kitchen:"Kitchen", craft:"Craft", community:"Community" };
   var ORDER = ["home", "body", "kitchen", "craft", "community"];
 
@@ -301,15 +288,15 @@
          a timer — see warmth(). It only ever adds light; there is no state in
          which the room gets darker than it was. */
       '<radialGradient id="g-hearth" cx="50%" cy="50%" r="50%">' +
-        '<stop offset="0%" stop-color="#ff9d4d" stop-opacity=".30"/>' +
-        '<stop offset="45%" stop-color="#ff9d4d" stop-opacity=".10"/>' +
-        '<stop offset="100%" stop-color="#ff9d4d" stop-opacity="0"/>' +
+        '<stop offset="0%" stop-color="' + PAL("--ember") + '" stop-opacity=".30"/>' +
+        '<stop offset="45%" stop-color="' + PAL("--ember") + '" stop-opacity=".10"/>' +
+        '<stop offset="100%" stop-color="' + PAL("--ember") + '" stop-opacity="0"/>' +
       '</radialGradient>' +
       /* Corners fall away slightly. Pure decoration, and it is what stops a flat
          tiled field from reading as wallpaper instead of a room. */
       '<radialGradient id="g-vignette" cx="50%" cy="46%" r="75%">' +
-        '<stop offset="66%" stop-color="#000000" stop-opacity="0"/>' +
-        '<stop offset="100%" stop-color="#000000" stop-opacity=".26"/>' +
+        '<stop offset="66%" stop-color="' + PAL("--shadow") + '" stop-opacity="0"/>' +
+        '<stop offset="100%" stop-color="' + PAL("--shadow") + '" stop-opacity=".26"/>' +
       '</radialGradient>';
   }
 
@@ -500,7 +487,7 @@
     g.appendChild(el("ellipse", {
       cx: (you.x + 0.5) * tile, cy: (you.y + 1) * tile - 2,
       rx: tile * 0.30, ry: tile * 0.15,
-      fill: "#000000", "fill-opacity": ".28"
+      fill: PAL("--shadow"), "fill-opacity": ".28"
     }));
 
     var u = el("use", {
@@ -526,15 +513,15 @@
     if (!dialogue) return;
     var boxH = tile * 3.2, y = H - boxH - tile * 0.4, x = tile * 0.4;
     var w = W - tile * 0.8;
-    g.appendChild(el("rect", { x:x, y:y, width:w, height:boxH, fill:"#241a2e",
-      stroke:"#2d1b33", "stroke-width":3 }));
+    g.appendChild(el("rect", { x:x, y:y, width:w, height:boxH, fill:PAL("--frame-fill"),
+      stroke:PAL("--frame-ink"), "stroke-width":3 }));
     g.appendChild(el("rect", { x:x+2.5, y:y+2.5, width:w-5, height:boxH-5,
-      fill:"none", stroke:"#f5c542", "stroke-width":2 }));
+      fill:"none", stroke:PAL("--frame-trim"), "stroke-width":2 }));
 
     var lines = wrapText(dialogue.text, 46);
     var ty = y + tile * 0.85;
     if (dialogue.title) {
-      var t = el("text", { x:x+tile*0.5, y:ty, fill:"#f5c542",
+      var t = el("text", { x:x+tile*0.5, y:ty, fill:PAL("--frame-trim"),
         "font-family":"ui-rounded,system-ui,sans-serif", "font-size":tile*0.52,
         "font-weight":"700" });
       t.textContent = dialogue.title;
@@ -542,7 +529,7 @@
       ty += tile * 0.62;
     }
     lines.slice(0, 3).forEach(function (line) {
-      var t = el("text", { x:x+tile*0.5, y:ty, fill:"#f6ecdc",
+      var t = el("text", { x:x+tile*0.5, y:ty, fill:PAL("--ink"),
         "font-family":"ui-rounded,system-ui,sans-serif", "font-size":tile*0.46 });
       t.textContent = line;
       g.appendChild(t);
@@ -633,7 +620,7 @@
         g.appendChild(el("ellipse", {
           cx: (c[0] + s[0] / 2) * tile, cy: (c[1] + s[1]) * tile - 2,
           rx: s[0] * tile * 0.40, ry: tile * 0.17,
-          fill: "#000000", "fill-opacity": ".22"
+          fill: PAL("--shadow"), "fill-opacity": ".22"
         }));
       }
       var u = el("use", {

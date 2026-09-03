@@ -6,23 +6,16 @@
 <meta name="theme-color" content="#151013">
 <title>Hearthsmith</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="palette.css">
 <style>
-  /* Dark first, on purpose: this gets opened at night, in bed, at low screen
-     brightness. Warm hues rather than blue-grey — the hearth is the metaphor and
-     the interface should feel like it is on the same side as you. */
-  :root{
-    --bg:#151013; --panel:#1e1719; --panel-2:#261d20; --line:#3a2c2f;
-    --ink:#f3e9e2; --dim:#a8968f; --faint:#7b6b67;
-    --ember:#ff9d4d; --ember-soft:#5a3620; --glow:#ffce8a;
-    --body:#8fbf7f; --home:#7fa8d8; --kitchen:#e2a06a; --craft:#b79bd8; --community:#e08fa8;
-    --r:14px;
-  }
-  @media (prefers-color-scheme: light){
-    :root{
-      --bg:#faf5f0; --panel:#fff; --panel-2:#f3ebe4; --line:#e4d7cc;
-      --ink:#2a2124; --dim:#6f5f5a; --faint:#948079; --ember-soft:#ffe6cc;
-    }
-  }
+  /* Every colour token lives in palette.css, including this page's light mode.
+     Only --r is per-page and stays here.
+
+     NOTE, carried over unchanged and deliberately NOT fixed here: this page is
+     still on the 14px radius that ADR-030 replaced with square corners on the
+     other two. That is a real divergence, but changing it is re-choosing rather
+     than extracting, so it is Matt's call and not this commit's. */
+  :root{ --r:14px; }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
@@ -48,7 +41,7 @@
   }
   .flame{
     width:100%;height:56px;display:block;
-    filter:drop-shadow(0 0 calc(2px + var(--warm)*14px) rgba(255,157,77,calc(.10 + var(--warm)*.42)));
+    filter:drop-shadow(0 0 calc(2px + var(--warm)*14px) color-mix(in srgb,var(--ember) calc(10% + var(--warm)*42%),transparent));
   }
   .hearth-label{text-align:center;color:var(--dim);font-size:.78rem;margin-top:6px}
 

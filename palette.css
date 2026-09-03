@@ -1,0 +1,144 @@
+/* palette.css — every colour in Hearthsmith's interface, in one place.
+ *
+ * WHY THIS FILE EXISTS, and why it reverses a decision recorded in room.html:
+ *
+ * That comment said the palette was "deliberately duplicated rather than
+ * extracted," because extracting it adds a shell file and a shell file has to
+ * be cache-busted forever. That was correct when it was written. Three things
+ * changed:
+ *
+ *   1. It said "two copies of eleven custom properties." profile.html joined
+ *      later, so it was three copies of fifteen.
+ *   2. The copies DRIFTED, which is the failure the decision assumed would not
+ *      happen: index.html still carries --r:14px, the 2015 radius ADR-030
+ *      replaced, and has no frame tokens at all.
+ *   3. The cache-bust cost it was avoiding is now paid by a machine. Since
+ *      0.4.0, tools/doctor.mjs FAILS when a shell file changes without a CACHE
+ *      bump, for all thirteen shell files. A fourteenth costs nothing to
+ *      remember.
+ *
+ * And the requirement changed, 2026-09-03: Matt asked to be able to walk up to
+ * this project months from now and say "can it look more SNES" or "warmer" and
+ * have that be an afternoon rather than a rewrite. That is a redirect cost, and
+ * it is what this file optimises for. Three copies made it three edits.
+ *
+ * THE RULE THIS FILE ESTABLISHES: no colour literal anywhere in the interface.
+ * If you are typing a # into an HTML or JS file, the token you want either
+ * lives here or belongs here.
+ *
+ * WHAT THIS FILE IS NOT. It themes the INTERFACE. The room itself has its own
+ * fixed palette in tiles.js — semantic, commented, and the seam for sprite
+ * colour — and deliberately does not follow light/dark. A room is a place, and
+ * a place does not change colour because the phone did.
+ */
+
+/* ---- the base: dark first, on purpose ---------------------------------
+   This gets opened at night, in bed, at low screen brightness. Warm hues
+   rather than blue-grey — the hearth is the metaphor and the interface should
+   feel like it is on the same side as you. */
+:root{
+  --bg:#151013;
+  --panel:#1e1719;
+  --panel-2:#261d20;
+  --line:#3a2c2f;
+
+  --ink:#f3e9e2;
+  --dim:#a8968f;
+  --faint:#7b6b67;
+
+  --ember:#ff9d4d;
+  --ember-soft:#5a3620;
+  --glow:#ffce8a;
+
+  /* the five activity categories */
+  --body:#8fbf7f;
+  --home:#7fa8d8;
+  --kitchen:#e2a06a;
+  --craft:#b79bd8;
+  --community:#e08fa8;
+
+  /* ---- 16-bit JRPG chrome (ADR-030) ----------------------------------
+     Matt's direction, 2026-09-02: Super Mario RPG / EarthBound / Final
+     Fantasy Mystic Quest. The window frame is the most recognisable thing
+     those three share AND the safest to evoke — a thick-bordered menu box is
+     genre convention going back to Dragon Quest, not any one game's
+     expression. What is off limits is their characters, sprites, music, logos
+     and names, none of which appear anywhere in this project.
+
+     Three layers, and all three matter: a plum outline (never black), a gold
+     bevel inside it, then the dark interior. */
+  --frame-ink:#2d1b33;
+  --frame-trim:#f5c542;
+  --frame-fill:#241a2e;
+  --frame-fill-2:#2f2239;
+
+  /* ---- surfaces that were literals before -----------------------------
+     Each of these was a raw hex somewhere in room.html, bypassing the tokens
+     that already existed two lines above it. */
+  --thumb-bg:#1d1526;      /* item thumbnail ground */
+  --strip-bg:#2b211c;      /* the room strip behind the canvas */
+  --on-ember:#2a1608;      /* text on an ember-filled button */
+  --shadow:#000000;        /* drop shadows; always with an opacity */
+  --vacant:#ffffff;        /* empty-slot hatching; always with an opacity */
+
+  /* ---- the drifting background field (ADR-030, EarthBound pass) --------
+     Three colour stops in the psychedelic layer. */
+  --drift-1:#ff4f9a;
+  --drift-2:#2fd8c8;
+  --drift-3:#7a5cff;
+  /* the counter-drifting stripe layer over the top */
+  --drift-stripe-1:#ffd64a;
+  --drift-stripe-2:#5ed6ff;
+
+  /* ---- the crest, which is PARAMETRIC ----------------------------------
+     profile.html draws a per-character crest whose HUE comes from the
+     character — it is identity, not theme, and it deliberately stays in the
+     data. What lives here is the saturation and lightness, which is style: it
+     is the pair you would flatten and over-saturate for a more SNES-like
+     read, and having it here is the difference between that being one edit
+     and seven.
+
+     Each token is the "S L" half of an hsl(), space-separated, so the JS
+     composes hsl(<hue> var(--token)). */
+  --crest-glow-in:85% 68%;    /* radial gradient, centre */
+  --crest-glow-out:85% 50%;   /* radial gradient, edge */
+  --crest-fill:80% 60%;       /* the polygon body */
+  --crest-edge:85% 66%;       /* the polygon outline */
+  --crest-node-lit:70% 64%;   /* a started tree */
+  --crest-node-ring:45% 52%;  /* every node's ring */
+  --crest-core:90% 72%;       /* the centre dot */
+}
+
+/* ---- the committed JRPG chrome ----------------------------------------
+   room.html and profile.html are menu windows over a moving colour field.
+   A cream version of that is a different object, not a light variant, so
+   these two pages commit rather than offering a light mode. Opt in with
+   <html data-chrome="jrpg">. */
+html[data-chrome="jrpg"]{
+  --bg:#141019;
+  --panel:#241a2e;
+  --panel-2:#2f2239;
+  --line:#3d2c4a;
+
+  --ink:#f6ecdc;
+  --dim:#b3a2b8;
+  --faint:#8b7f9a;
+}
+
+/* ---- light mode, index.html only --------------------------------------
+   index.html is a list, not a window, so it still answers the system setting.
+   Scoped to pages that have NOT committed to the JRPG chrome, so adding the
+   attribute is the whole opt-out. */
+@media (prefers-color-scheme: light){
+  html:not([data-chrome="jrpg"]){
+    --bg:#faf5f0;
+    --panel:#fff;
+    --panel-2:#f3ebe4;
+    --line:#e4d7cc;
+
+    --ink:#2a2124;
+    --dim:#6f5f5a;
+    --faint:#948079;
+    --ember-soft:#ffe6cc;
+  }
+}

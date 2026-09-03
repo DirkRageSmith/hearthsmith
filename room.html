@@ -436,12 +436,39 @@
     return { kind: "floor" };
   }
 
+  /* THE HEARTH TALKS BACK (slice 1.7, option 1: "the hearth becomes a place
+   * you can be"). Every other fixture and item has one fixed `examine` line;
+   * the hearth is the one thing that is always there, so it is the one thing
+   * worth returning to more than once. Reuses the two numbers the room
+   * already computes every render — warmth() and what S.owned() says you've
+   * built — so this adds no new state, no new event, nothing to migrate.
+   * Same shape as every other examine line: the first sentence says what the
+   * fire is doing, the second says what's around it. Never a clock, never a
+   * count of days, never a word about whether you've been back. */
+  function hearthLine() {
+    var events = L.read();
+    var w = warmth(L.visibleEvents(events), L.balances(events));
+    var built = S.owned(events).length;
+    var heat =
+      w > 0.72 ? "The fire's burning high tonight, closer to a bonfire than embers." :
+      w > 0.45 ? "It's warm in here, steady, and it doesn't need tending." :
+      w > 0.20 ? "It's glowing more than blazing right now, and that's fine." :
+                 "It's banked down low, coals holding their heat under the ash.";
+    var around =
+      built === 0 ? "Everything else in here is bare floor." :
+      built === 1 ? "One thing stands with it now. The room isn't only the fire." :
+      built < 5   ? "A few things stand around it now, catching the light too." :
+                    "It's surrounded now, and the light reaches all of it.";
+    return heat + " " + around;
+  }
+
   function look() {
     if (dialogue) { dialogue = null; render(); return; }   // tap again to close
     var f = facing();
     var amb = (SHOP.room.ambient || {});
     if (f.kind === "item") {
-      dialogue = { title: f.item.label || null, text: f.item.examine || amb.nothing || "" };
+      var text = f.item.id === "hearth" ? hearthLine() : (f.item.examine || amb.nothing || "");
+      dialogue = { title: f.item.label || null, text: text };
     } else {
       dialogue = { title: null, text: amb[f.kind] || amb.nothing || "" };
     }

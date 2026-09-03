@@ -706,3 +706,38 @@ reads, and an undocumented park becomes an abandonment.*
 > **75 tests, doctor HEALTHY at 13 checks.** Verified by playing it: walked the corridor
 > from the front of the room to the back wall and looked up at the picture, which was
 > impossible an hour earlier.
+>
+> **2026-09-02 (0.13.0, Bellows pass) — slice 1.7, option 1: the hearth talks back.** NEXT.md
+> offered three alternatives for "give the room something to be walked *to*" and recommended
+> "1, then 2." Built 1: the hearth's dialogue line is no longer the one fixed sentence in
+> `shop.json` — standing in front of it and looking now reads two clauses, warmth first
+> (four bands, reusing `room.html`'s own already-shipped thresholds and vocabulary from
+> `index.html`'s hearth label — *banked / glowing / warm / burning bright* — rather than
+> inventing new language for a state the app already names elsewhere) and then what's built
+> around it (bare / one thing / a few things / surrounded). **Costs no new state**, exactly
+> as the slice asked: both numbers were already computed every render (`warmth()` for the
+> light, `S.owned(events).length` for the "built so far" counter), this just reads them a
+> second time for a fixture that used to be static.
+>
+> All 16 combinations were checked against the dialogue box's own 3-line wrap (`wrapText`,
+> 46 chars/line) before shipping — the first draft of the "warm" and "glowing" clauses
+> overflowed to a 4th line on three of the sixteen pairings, which the box silently drops
+> rather than failing loud. Shortened until every combination fit; verified with a small
+> node script running the real `wrapText()` against all 16 pairs, not by eyeballing the
+> longest-looking one.
+>
+> **`ledger.js`'s `SOURCE` moved to 0.13.0** even though nothing about the ledger's own logic
+> changed — this project's convention ties the shipped version, the service-worker cache and
+> `SOURCE` together, and the version string lives inside the vendored file. Re-copied
+> byte-identical into FitFlexr per ADR-022 (check 10 caught the drift immediately, as
+> designed) and committed there separately from `hearthsmith`'s own commit.
+>
+> **Option 2 (oblique tops on furniture) is still open** — NEXT.md called it "pure craft, no
+> design left," so it becomes the next slice rather than sitting as a candidate again.
+> **75 tests unchanged** (no new ledger logic, no new event kind), doctor HEALTHY at 13
+> checks, `hearthsmith@0.13.0`.
+>
+> **Unpushed on purpose**, same shape as every prior Bellows slice: `hearthsmith` is public
+> and OPERATING.md forbids a pass from pushing one. Committed to a new local branch,
+> `bellows/hearth-talks-back`, one commit on top of the `main` this pass started from — see
+> `bellows/HANDOFF.md` for what to check before merging.

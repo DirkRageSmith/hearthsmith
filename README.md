@@ -28,8 +28,12 @@ three-outside-testers requirement moved to the *end of Tier 1*, where there is a
 react to rather than a habit tracker.
 
 **Live and verified 2026-09-03 by fetching the served asset, not by reading the repo:**
-`ledger.js` reports `hearthsmith@0.14.0` on both this site and FitFlexr's. `node
-tools/doctor.mjs` reads **12 ok, 2 warn, 0 fail** with **75 ledger tests** passing.
+`ledger.js` reports `hearthsmith@0.14.1` on both this site and FitFlexr's. `node
+tools/doctor.mjs` reads **14 ok, 1 warn, 0 fail** with **75 ledger tests** passing.
+
+*Both numbers in the line above were written stale earlier the same day — `0.14.0` and
+`12 ok, 2 warn` — within hours of correcting this block for being stale. A status line is
+wrong by default the moment anything ships; it is only ever true on the day it is written.*
 
 **Both warnings are correct and should not be silenced.** `NEXT.md current — no slice
 number found` is right: no slice is chosen, because everything remaining is a taste call.

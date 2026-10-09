@@ -104,6 +104,7 @@
     { "verb": "worked_on_project",     "label": "Worked on a project",         "skill": "craft",     "tier": "sustained", "stat": "agi" },
 
     { "verb": "reached_out",           "label": "Messaged someone I care about", "skill": "community", "tier": "community", "stat": "luk", "needs": ["people"] },
+    { "verb": "caught_up_on_messages", "label": "Caught up on messages from people I care about", "skill": "community", "tier": "sustained", "stat": "luk" },
     { "verb": "answered_someone",      "label": "Answered someone's question",  "skill": "community", "tier": "upkeep",    "stat": "spd" },
     { "verb": "left_kind_words",       "label": "Said something kind online",   "skill": "community", "tier": "upkeep",    "stat": "spd" },
     { "verb": "helped_someone",        "label": "Helped someone",              "skill": "community", "tier": "community", "stat": "luk", "needs": ["people"] },

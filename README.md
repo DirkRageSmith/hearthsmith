@@ -27,8 +27,9 @@ Tier 0 is complete. Its gate was revised and met on 2026-08-31 (**ADR-017**): th
 three-outside-testers requirement moved to the *end of Tier 1*, where there is a game to
 react to rather than a habit tracker.
 
-**Live and verified 2026-09-03 by fetching the served asset, not by reading the repo:**
-`ledger.js` reports `hearthsmith@0.14.1` on both this site and FitFlexr's. `node
+**Live and verified 2026-10-08 by fetching the served asset, not by reading the repo:**
+`ledger.js` reports `hearthsmith@0.14.2` on both this site and FitFlexr's (0.14.2 adds
+`caught_up_on_messages`, Community's first solo `sustained` action, authored by Matt). `node
 tools/doctor.mjs` reads **14 ok, 1 warn, 0 fail** with **75 ledger tests** passing.
 
 *Both numbers in the line above were written stale earlier the same day — `0.14.0` and
